@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+
+<html>
+    <head>
+        <style>
+            input {
+                font-family: inherit;
+                font-size: inherit;
+                border: 1px solid;
+                border-radius: 0px;
+                margin: 0px;
+                padding: 0px;
+            }
+            button, submit {
+                font-family: sans-serif;
+                background-color: #a6d49c;
+                color: #005CA6;
+                border-width: 1px;
+                border-radius: 0px;
+                border-color: #007f60;
+            }
+            .pop {
+                font-family: sans-serif;
+                position: absolute;
+                top: 5%;
+                background-color: rgba(166,212,156,0.9);
+                color: #005CA6;
+                border: solid;
+                border-width: 1px;
+                border-color: #007f60;
+                width: 99%;
+                height: 130px;
+                z-index: 1;
+                display: none;
+            }
+            .toggler {
+                font-family: sans-serif;
+                position: absolute;
+                top: 0%;
+                z-index: 1;
+            }
+        </style>
+        <script src="http://code.jquery.com/jquery-2.1.4.min.js"></script>
+        <script src="http://cdn.jsdelivr.net/webshim/1.14.5/polyfiller.js"></script>
+        <script>
+            // polyfill for IE date fields
+            webshims.setOptions('forms-ext', { types: 'date' });
+            webshims.polyfill('forms forms-ext');
+            $.webshims.formcfg = {
+                en: {
+                    dFormat: '-',
+                    dateSigns: '-',
+                    patterns: {
+                        d: 'yy-mm-dd'
+                    }
+                }
+            };
+            // toggler for email popup
+            function toggler() {
+                var p = document.getElementById("pop");
+                p.style.display = p.style.display == 'none' ? 'inline-block' : p.style.display == 'inline-block' ? 'none' : 'inline-block';
+            }
+            // load form data inserted by NodeJS
+            function loaded() {
+                var data = document.getElementById('data841350ab-4f07-46b9-9fca-1e03d46779e8').innerHTML;
+                var pairs = data.split('&amp;');
+                for (p of pairs) {
+                    var pp = p.split('=');
+                    console.log(pp);
+                    var ppelem = document.getElementById(pp[0]);
+                    ppelem.value = pp[1];
+                }
+                console.log(pairs);
+            }
+            window.onload = loaded;
+        </script>
+    </head>
+    <body>
+        <form method="post" action="/submit" id="form" name="form">
+            <div id="pop" class="pop">
+                <br>
+                <table>
+                    <tr>
+                        <td style="text-align:right;">
+                            From:
+                        </td>
+                        <td>
+                            <input id='popFrom' name='popFrom' type='text' size=50 />
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="text-align:right;">
+                            To:
+                        </td>
+                        <td>
+                            <input id='popTo' name='popTo' type='text' size=50 />
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="text-align:right;">
+                            Cc:
+                        </td>
+                        <td>
+                            <input id='popCc' name='popCc' type='text' size=50 />
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="text-align:right;">
+                            Subject:
+                        </td>
+                        <td>
+                            <input id='popSubject' name='popSubject' type='text' size=100 />
+                        </td>
+                    </tr>
+                </table>
+                <br>
+            </div>
+            <div id="form">formhtmld8ee24e6-747a-4bda-93f0-090d7ee7d675</div>
+            <div id="toggler" class="toggler">
+                <button type="button" onclick="toggler();">Email Info</button>
+                <button type="submit">Submit</button>
+            </div>
+        </form>
+        <div id="data841350ab-4f07-46b9-9fca-1e03d46779e8" display="none"></div>
+    </body>
+</html>
