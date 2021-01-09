@@ -2,125 +2,278 @@
 
 <html>
     <head>
+        <style media='print'>
+            @page rotated {
+                size: landscape;
+            }
+            body {
+                height: 101vh;
+            }
+        </style>
         <style>
-            input {
+            /* colors from logo: #a6d49c (light green), #005ca6 (dark blue), #007f60 (dark green - primary color on logo) */
+            /* primary is #a6d49c, triadic for vibrant accent are #d49ca7 and #9ca7d4 */
+            input[type=text], input[type=date] {
                 font-family: inherit;
                 font-size: inherit;
-                border: 1px solid;
+                border: 1px solid #555;
                 border-radius: 0px;
                 margin: 0px;
                 padding: 0px;
             }
+            input[readonly='readonly'], .readonly {
+                background-color: #d49ca7;
+            }
+            .signature {
+                font-family: 'Lucida Handwriting', cursive !important;
+            }
+            .system {
+                font-family: 'Courier New', monospace !important;
+                font-size: x-small !important;
+            }
             button, submit {
                 font-family: sans-serif;
+                font-size: x-large;
+                width: 50px;
                 background-color: #a6d49c;
-                color: #005CA6;
                 border-width: 1px;
                 border-radius: 0px;
-                border-color: #007f60;
+                border-color: #9ca7d4;
             }
-            .pop {
-                font-family: sans-serif;
+            .popEmail {
+                top: calc(100vh + 70px);
+            }
+            .popApproval {
+                top: calc(100vh + 210px);
+            }
+            .popEmail, .popApproval {
                 position: absolute;
-                top: 5%;
+                font-family: sans-serif;
                 background-color: rgba(166,212,156,0.9);
-                color: #005CA6;
                 border: solid;
-                border-width: 1px;
-                border-color: #007f60;
+                border-width: 4px;
+                border-color: #9ca7d4;
                 width: 99%;
-                height: 130px;
+                height: 140px;
                 z-index: 1;
+            }
+            .scroller {
+                font-family: sans-serif;
+                position: fixed;
+                top: 0%;
+                left: 15px;
+                z-index: 1;
+            }
+            .formdata {
+                visibility: hidden;
                 display: none;
             }
-            .toggler {
-                font-family: sans-serif;
-                position: absolute;
-                top: 0%;
-                z-index: 1;
+            .form {
+                height: 100vh;
+            }
+            .pop {
+                height: 100vh;
             }
         </style>
         <script src="http://code.jquery.com/jquery-2.1.4.min.js"></script>
         <script src="http://cdn.jsdelivr.net/webshim/1.14.5/polyfiller.js"></script>
         <script>
-            // polyfill for IE date fields
-            webshims.setOptions('forms-ext', { types: 'date' });
             webshims.polyfill('forms forms-ext');
-            $.webshims.formcfg = {
-                en: {
-                    dFormat: '-',
-                    dateSigns: '-',
-                    patterns: {
-                        d: 'yy-mm-dd'
-                    }
+            function validate() {
+                var re = /[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?/;
+                var from = document.getElementById('popFrom').value;
+                var to = document.getElementById('popTo').value;
+                var cc = document.getElementById('popCc').value;
+                var form = document.getElementById('form');
+                var b = true;
+                if (!re.test(from)) {
+                    alert("Email address in From is not valid");
+                    b = false;
                 }
-            };
-            // toggler for email popup
-            function toggler() {
-                var p = document.getElementById("pop");
-                p.style.display = p.style.display == 'none' ? 'inline-block' : p.style.display == 'inline-block' ? 'none' : 'inline-block';
+                if (to != '' && !re.test(to)) {
+                    alert("Email address in To is not valid");
+                    b = false;
+                }
+                if (cc != '' && !re.test(cc)) {
+                    alert("Email address in Cc is not valid");
+                    b = false;
+                }
+                if (b) {
+                    form.submit();
+                }
+            }
+            function scroller() {
+                var btn = document.getElementById('bScroller');
+                if (btn.innerHTML == '\u1403') {
+                    window.scrollBy(0,1000);
+                    btn.innerHTML = '\u1401';
+                    btn.title = 'scroll down document attributes';
+                }
+                else {
+                    window.scrollBy(0,-1000);
+                    btn.innerHTML = '\u1403'
+                    btn.title = 'scroll up document attributes';
+                }
+            }
+            function addvalue(btn,text,date,auth) {
+                var ADn = document.getElementById('ADn').innerHTML;
+                var ADs = document.getElementById('ADs').innerHTML;
+                alert(ADs);
+                var b = document.getElementById(btn);
+                var t = document.getElementById(text);
+                var d = document.getElementById(date);
+                var a = document.getElementById(auth);
+
+                if (confirm('Are you sure?\nThis CANNOT be undone!')) {
+                    b.innerHTML = '\u2714';
+                    b.disabled = true;
+                    b.title = 'signed and dated!';
+                    t.value = ADn;
+                    if (d.type == 'date') {
+                        d.value = new Date().toISOString().slice(0, 10);
+                    }
+                    else {
+                        $('#' + date).val(new Date().toLocaleDateString());
+                    }
+                    a.value = ADs;
+                }
             }
             // load form data inserted by NodeJS
             function loaded() {
                 var data = document.getElementById('data841350ab-4f07-46b9-9fca-1e03d46779e8').innerHTML;
                 var pairs = data.split('&amp;');
-                for (p of pairs) {
-                    var pp = p.split('=');
+                for (var i=0; i < pairs.length; i++) {
+                    var pp = pairs[i].split('=');
                     console.log(pp);
-                    var ppelem = document.getElementById(pp[0]);
-                    ppelem.value = pp[1];
+                    try {
+                        var ppelem = document.getElementById(pp[0]);
+                        ppelem.value = pp[1];
+                    }
+                    catch (e) {
+                        console.log(e);
+                        break;
+                    }
                 }
                 console.log(pairs);
+                var popFrom = document.getElementById('popFrom');
+                var ADe = document.getElementById('ADe');
+                popFrom.value = ADe.innerHTML;
             }
             window.onload = loaded;
         </script>
     </head>
     <body>
+        <div id="ADn" class="formdata">ADn7ae5aea0-4552-4d6e-97c6-81de833c99cc</div>
+        <div id="ADe" class="formdata">ADe181dde0b-974d-40ab-ae86-5cdd60008530</div>
+        <div id="ADs" class="formdata">ADs157fddd5-969a-4660-8283-e6b99ab5906b</div>
+        <div id="data841350ab-4f07-46b9-9fca-1e03d46779e8" class="formdata"></div>
         <form method="post" action="/submit" id="form" name="form">
+            <div id="form" class="form">formhtmld8ee24e6-747a-4bda-93f0-090d7ee7d675</div>
             <div id="pop" class="pop">
-                <br>
-                <table>
-                    <tr>
-                        <td style="text-align:right;">
-                            From:
-                        </td>
-                        <td>
-                            <input id='popFrom' name='popFrom' type='text' size=50 />
-                        </td>
-                    </tr>
-                    <tr>
-                        <td style="text-align:right;">
-                            To:
-                        </td>
-                        <td>
-                            <input id='popTo' name='popTo' type='text' size=50 />
-                        </td>
-                    </tr>
-                    <tr>
-                        <td style="text-align:right;">
-                            Cc:
-                        </td>
-                        <td>
-                            <input id='popCc' name='popCc' type='text' size=50 />
-                        </td>
-                    </tr>
-                    <tr>
-                        <td style="text-align:right;">
-                            Subject:
-                        </td>
-                        <td>
-                            <input id='popSubject' name='popSubject' type='text' size=100 />
-                        </td>
-                    </tr>
-                </table>
-                <br>
+                <div id="popEmail" class="popEmail">
+                    <table>
+                        <tr>
+                            <td rowspan = "3">
+                                <button id="bEmail" title='save and email your form' type="button" onclick="validate();">&#128231;</button>
+                            </td>
+                            <td style="text-align:right;">
+                                From:
+                            </td>
+                            <td>
+                                <input id='popFrom' name='popFrom' type='text' size=50 />
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="text-align:right;">
+                                To:
+                            </td>
+                            <td>
+                                <input id='popTo' name='popTo' type='text' size=50 />
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="text-align:right;">
+                                Cc:
+                            </td>
+                            <td>
+                                <input id='popCc' name='popCc' type='text' size=50 />
+                            </td>
+                        </tr>
+                        <tr>
+                            <td></td>
+                            <td style="text-align:right;">
+                                Subject:
+                            </td>
+                            <td>
+                                <input id='popSubject' name='popSubject' type='text' size=100 />
+                            </td>
+                        </tr>
+                    </table>
+                    <br>
+                </div>
+                <div id="popApproval" class="popApproval">
+                    <table>
+                        <tr>
+                            <td>
+                                <button id='bReq' type='button' title='Sign and date' onclick="addvalue('bReq','popReqBy','popReqByDate','popReqByAuth');">&#10001;</button>
+                            </td>
+                            <td style="text-align:right;">
+                                Requested By:
+                            </td>
+                            <td>
+                                <input id='popReqBy' name='popReqBy' type='text' size=50 class='signature' readonly='readonly' />
+                            </td>
+                            <td>
+                                <input id='popReqByDate' name='popReqByDate' type='date' placeholder='mm/dd/yyyy' class='readonly' readonly='readonly' />
+                            </td>
+                        </tr>
+                        <tr>
+                            <td></td>
+                            <td></td>
+                            <td>
+                                <input id='popReqByAuth' name='popReqByAuth' type='text' size=50 class='system' readonly='readonly' />
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <button id="bApp1" type="button" title='Sign and date' onclick="addvalue('bApp1','popApp1By','popApp1ByDate','popApp1ByAuth');">&#10001;</button>
+                            </td>
+                            <td style="text-align:right;">
+                                Approved By:
+                            </td>
+                            <td>
+                                <input id='popApp1By' name='popApp1By' type='text' size=50 class='signature' readonly='readonly' />
+                            </td>
+                            <td>
+                                <input id='popApp1ByDate' name='popApp1ByDate' type='date' placeholder='mm/dd/yyyy' class='readonly' readonly='readonly' />
+                            </td>
+                            <td>
+                                <input id='popApp2ByAuth' name='popApp1ByAuth' type='text' size=50 class='system' readonly='readonly' />
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <button id="bApp2" type="button" title='Sign and date' onclick="addvalue('bApp2','popApp2By','popApp2ByDate','popApp2ByAuth');">&#10001;</button>
+                            </td>
+                            <td style="text-align:right;">
+                                Approved By:
+                            </td>
+                            <td>
+                                <input id='popApp2By' name='popApp2By' type='text' size=50 class='signature' readonly='readonly' />
+                            </td>
+                            <td>
+                                <input id='popApp2ByDate' name='popApp2ByDate' type='date' placeholder='mm/dd/yyyy' class='readonly' readonly='readonly' />
+                            </td>
+                            <td>
+                                <input id='popApp2ByAuth' name='popApp2ByAuth' type='text' size=50 class='system' readonly='readonly' />
+                            </td>
+                        </tr>
+                    </table>
+                </div>
             </div>
-            <div id="form">formhtmld8ee24e6-747a-4bda-93f0-090d7ee7d675</div>
-            <div id="toggler" class="toggler">
-                <button type="button" onclick="toggler();">Email Info</button>
-                <button type="submit">Submit</button>
+            <div id="scroller" class="scroller">
+                <button id="bScroller" type="button" title="scroll up document attributes" onclick="scroller();">&#5123;</button>
             </div>
         </form>
-        <div id="data841350ab-4f07-46b9-9fca-1e03d46779e8" display="none"></div>
     </body>
 </html>

@@ -11,6 +11,7 @@ const path = require('path');
 const url = require('url');
 const port = process.env.PORT || 1342;
 const qs = require('querystring');
+const os = require('os');
 const uuid = require('uuid');
 const child_process = require('child_process');
 const nodemailer = require('nodemailer');
@@ -20,7 +21,7 @@ const nodemailer = require('nodemailer');
 
 const jsondir = '\\\\file01\\data\\nmmc documents\\Scripts\\excelToJson\\';
 
-sendemail();
+// sendemail();
 
 function sendemail() {
     let transporter = nodemailer.createTransport({
@@ -55,6 +56,9 @@ http.createServer(function (req, res) {
     const params = new URLSearchParams(req.url.slice(1)); // starts with a /
     const action = params.get('q');
 
+    var ip = req.connection.remoteAddress;
+    var usr = os.userInfo().username;
+
     console.log(req.url);
     console.log(req.method);
     console.log(action);
@@ -64,7 +68,8 @@ http.createServer(function (req, res) {
             var fname = params.get('fname')
             var u = uuid.v1();
             var uname = `${fname}-${u}.html`;
-            child_process.execSync(`powershell -ExecutionPolicy Bypass -File ./json2html.ps1 "${jsondir}${fname}" "./html/${uname}"`);
+            console.log(ip);
+            child_process.execSync(`powershell -ExecutionPolicy Bypass -File ./json2html.ps1 "${jsondir}${fname}" "./html/${uname}" "${ip}" "${usr}"`);
 
             fs.readFile(`./html/${uname}`, null, (err, html) => {
                 if (err) throw err;
