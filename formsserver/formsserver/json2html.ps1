@@ -119,6 +119,22 @@ Write-Host $Matches.ADuser;
 Write-Host $Matches.session;
 Write-Host $Matches.logontime;
 
+$user = $Matches.ADuser;
+$session = $Matches.session;
+$logontime = $Matches.logontime;
+
+# get most recent rdp connection time from the event log
+if ($session -like '*rdp-tcp#*') {
+    $ago = (Get-Date) - (New-TimeSpan -Day 2);
+    $logname = 'Microsoft-Windows-TerminalServices-LocalSessionManager/Operational'; #25 - session reconnected
+    $messages = Get-WinEvent -ComputerName $ip -LogName $logname | Where-Object { $_.TimeCreated -ge $ago -and $_.Id -eq 25};
+    foreach ($_ in $messages) {
+        Write-Host $_.TimeCreated;
+        $logontime = $_.TimeCreated;
+        break;
+    }
+}
+
 $aduser = Get-ADUser $Matches.ADuser -Properties * | Select-Object Name, EmailAddress
 if ($null -eq $aduser.Name) {
     $ADn = "Please provide a valid user name";
@@ -127,7 +143,7 @@ if ($null -eq $aduser.Name) {
 } else {
     $ADn = $aduser.Name;
     $ADe = $aduser.EmailAddress;
-    $ADs = ("{0} {1} {2} {3}" -f $ip, $Matches.ADuser, $Matches.session, $Matches.logontime);
+    $ADs = ("{0} {1} {2} {3}" -f $ip, $user, $session, $logontime);
 }
 
 ((Get-Content './form.html') -replace ('ADn7ae5aea0-4552-4d6e-97c6-81de833c99cc', $ADn) `

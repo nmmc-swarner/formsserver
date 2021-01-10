@@ -28,8 +28,8 @@
                 font-family: 'Lucida Handwriting', cursive !important;
             }
             .system {
-                font-family: 'Courier New', monospace !important;
-                font-size: x-small !important;
+                font-family: 'Lucida Console', 'Courier', monospace !important;
+                font-size: small !important;
             }
             button, submit {
                 font-family: sans-serif;
@@ -42,19 +42,20 @@
             }
             .popEmail {
                 top: calc(100vh + 70px);
+                height: 105px;
             }
             .popApproval {
-                top: calc(100vh + 210px);
+                top: calc(100vh + 180px);
+                height: 255px;
             }
             .popEmail, .popApproval {
                 position: absolute;
-                font-family: sans-serif;
+                font-family: 'Helvetica','Arial',sans-serif;
                 background-color: rgba(166,212,156,0.9);
                 border: solid;
                 border-width: 4px;
                 border-color: #9ca7d4;
                 width: 99%;
-                height: 140px;
                 z-index: 1;
             }
             .scroller {
@@ -99,7 +100,9 @@
                     b = false;
                 }
                 if (b) {
-                    form.submit();
+                    if (confirm('Click OK to save and send form data.\nYou will receive an email link of this form.')) {
+                        form.submit();
+                    }
                 }
             }
             function scroller() {
@@ -118,13 +121,12 @@
             function addvalue(btn,text,date,auth) {
                 var ADn = document.getElementById('ADn').innerHTML;
                 var ADs = document.getElementById('ADs').innerHTML;
-                alert(ADs);
                 var b = document.getElementById(btn);
                 var t = document.getElementById(text);
                 var d = document.getElementById(date);
                 var a = document.getElementById(auth);
 
-                if (confirm('Are you sure?\nThis CANNOT be undone!')) {
+                if (confirm('Click OK to electronically sign.\nAn authentication string will be appended that\nincludes your internal IP and logon time.\n\nNOTE: This cannot be undone!')) {
                     b.innerHTML = '\u2714';
                     b.disabled = true;
                     b.title = 'signed and dated!';
@@ -135,7 +137,7 @@
                     else {
                         $('#' + date).val(new Date().toLocaleDateString());
                     }
-                    a.value = ADs;
+                    a.value = 'Authentication ' + ADs;
                 }
             }
             // load form data inserted by NodeJS
@@ -231,7 +233,7 @@
                             <td></td>
                             <td></td>
                             <td>
-                                <input id='popReqByAuth' name='popReqByAuth' type='text' size=50 class='system' readonly='readonly' />
+                                <input id='popReqByAuth' name='popReqByAuth' type='text' size=70 class='system' readonly='readonly' />
                             </td>
                         </tr>
                         <tr>
@@ -247,8 +249,12 @@
                             <td>
                                 <input id='popApp1ByDate' name='popApp1ByDate' type='date' placeholder='mm/dd/yyyy' class='readonly' readonly='readonly' />
                             </td>
+                        </tr>
+                        <tr>
+                            <td></td>
+                            <td></td>
                             <td>
-                                <input id='popApp2ByAuth' name='popApp1ByAuth' type='text' size=50 class='system' readonly='readonly' />
+                                <input id='popApp1ByAuth' name='popApp1ByAuth' type='text' size=70 class='system' readonly='readonly' />
                             </td>
                         </tr>
                         <tr>
@@ -264,8 +270,33 @@
                             <td>
                                 <input id='popApp2ByDate' name='popApp2ByDate' type='date' placeholder='mm/dd/yyyy' class='readonly' readonly='readonly' />
                             </td>
+                        </tr>
+                        <tr>
+                            <td></td>
+                            <td></td>
                             <td>
-                                <input id='popApp2ByAuth' name='popApp2ByAuth' type='text' size=50 class='system' readonly='readonly' />
+                                <input id='popApp2ByAuth' name='popApp2ByAuth' type='text' size=70 class='system' readonly='readonly' />
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <button id="bApp3" type="button" title='Sign and date' onclick="addvalue('bApp3','popApp3By','popApp3ByDate','popApp3ByAuth');">&#10001;</button>
+                            </td>
+                            <td style="text-align:right;">
+                                Approved By:
+                            </td>
+                            <td>
+                                <input id='popApp3By' name='popApp3By' type='text' size=50 class='signature' readonly='readonly' />
+                            </td>
+                            <td>
+                                <input id='popApp3ByDate' name='popApp3ByDate' type='date' placeholder='mm/dd/yyyy' class='readonly' readonly='readonly' />
+                            </td>
+                        </tr>
+                        <tr>
+                            <td></td>
+                            <td></td>
+                            <td>
+                                <input id='popApp3ByAuth' name='popApp3ByAuth' type='text' size=70 class='system' readonly='readonly' />
                             </td>
                         </tr>
                     </table>
