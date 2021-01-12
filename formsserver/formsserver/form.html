@@ -36,33 +36,38 @@
                 font-size: x-large;
                 width: 50px;
                 background-color: #a6d49c;
-                border-width: 1px;
+                border-width: 0px;
                 border-radius: 0px;
                 border-color: #9ca7d4;
+                box-shadow: -2px 2px #9ca7d4;
+            }
+            button:disabled, button[disabled] {
+                display: none;
             }
             .popEmail {
                 top: calc(100vh + 70px);
-                height: 105px;
+                height: 125px;
             }
             .popApproval {
-                top: calc(100vh + 180px);
-                height: 255px;
+                top: calc(100vh + 200px);
+                height: 270px;
             }
             .popEmail, .popApproval {
                 position: absolute;
                 font-family: 'Helvetica','Arial',sans-serif;
                 background-color: rgba(166,212,156,0.9);
                 border: solid;
-                border-width: 4px;
+                border-width: 0px;
                 border-color: #9ca7d4;
                 width: 99%;
                 z-index: 1;
+                box-shadow: -0px 0px #9ca7d4;
             }
-            .scroller {
+            .menu {
                 font-family: sans-serif;
                 position: fixed;
                 top: 0%;
-                left: 15px;
+                left: calc(100vw - 125px);
                 z-index: 1;
             }
             .formdata {
@@ -140,16 +145,51 @@
                     a.value = 'Authentication ' + ADs;
                 }
             }
+            function calc(e,f) {
+                console.log('calc!');
+                console.log(e.id);
+                console.log(f);
+
+                // target element to hold calculated value
+                var arr = f.match(/([A-Z]+\d+)=/g);
+                let target = document.getElementById(arr[0].replace(/=/, ''));
+
+                // replace formula ids with element values
+                let feval = f.replace(/[A-Z]+\d+=?\+/, '');
+                console.log(feval);
+
+                /*
+                let arr = f.match(/([A-Z]\d+)/g);
+                for (var j=0; j < arr.length; j++) {
+                    var elem = document.getElementById(arr[j]);
+                    elem.addEventListener('input', function(){calc(this, f);});
+                }
+                */
+                console.log(target.id);
+            }
+            function welcome() {
+                var ftitle = document.getElementById('ftitle');
+                var fdescription = document.getElementById('fdescription');
+                var welcome = ftitle.innerHTML;
+                if (fdescription.innerHTML != '') {
+                    welcome += '\n\n';
+                    welcome += fdescription.innerHTML.replace(/([^\n]{1,64})\s/g, '$1\n');
+                }
+                alert(welcome);
+            }
             // load form data inserted by NodeJS
             function loaded() {
-                var data = document.getElementById('data841350ab-4f07-46b9-9fca-1e03d46779e8').innerHTML;
+                var fdata = document.getElementById('fdata'); 
+                var data = fdata.innerHTML;
+                console.log(data);
                 var pairs = data.split('&amp;');
                 for (var i=0; i < pairs.length; i++) {
                     var pp = pairs[i].split('=');
                     console.log(pp);
                     try {
                         var ppelem = document.getElementById(pp[0]);
-                        ppelem.value = pp[1];
+                        var s = pp[1].replace(/\+/g, ' ');
+                        ppelem.value = unescape(s);
                     }
                     catch (e) {
                         console.log(e);
@@ -160,20 +200,61 @@
                 var popFrom = document.getElementById('popFrom');
                 var ADe = document.getElementById('ADe');
                 popFrom.value = ADe.innerHTML;
+
+                var popSubject = document.getElementById('popSubject');
+                var ftitle = document.getElementById('ftitle');
+                popSubject.value = 'My Form "' + ftitle.innerHTML + '"';
+
+                var popApproval = document.getElementById('popApproval');
+                var fapproval = document.getElementById('fapproval');
+                if (fapproval.innerHTML == 'False') {
+                    popApproval.style.display = 'none';
+                }
+                // add event listeners to operand elements
+                var formula = document.getElementsByClassName('formula');
+                for (var i=0; i < formula.length; i++) {
+                    let fattr = formula[i].getAttribute('formula');
+                    const f = formula[i].id + fattr;
+                    if (/SUM/.test(fattr)) {
+                        var arr = fattr.match(/([A-Z]+\d+)/g);
+                        let sumC = arr[0].replace(/\d+/,'');
+                        let sumR = arr[0].replace(/[A-Z]+/,'') * 1;
+                        let maxR = arr[1].replace(/[A-Z]+/,'') * 1;
+                        console.log(sumC, sumR, maxR);
+                        do {
+                            let t = sumC + sumR;
+                            var elem = document.getElementById(t);
+                            elem.addEventListener('input', function(){calc(this, f);});
+                            sumR++;
+                        } while(sumR <= maxR);
+                    }
+                    else {
+                        arr = f.match(/([A-Z]\d+)/g);
+                        for (var j=0; j < arr.length; j++) {
+                            var elem = document.getElementById(arr[j]);
+                            elem.addEventListener('input', function(){calc(this, f);});
+                        }
+                    }
+                }
+                welcome();
             }
             window.onload = loaded;
         </script>
     </head>
     <body>
+        <div id="ftitle" class="formdata">title4930cd57-0961-4f30-92d7-4eb5c3e8381b</div>
+        <div id="fdescription" class="formdata">description50457d64-1baa-480b-905c-b59dd8086dde</div>
+        <div id="fapproval" class="formdata">approval7d0aac5d-47c2-4e0c-8bc4-23761efa7a0e</div>
         <div id="ADn" class="formdata">ADn7ae5aea0-4552-4d6e-97c6-81de833c99cc</div>
         <div id="ADe" class="formdata">ADe181dde0b-974d-40ab-ae86-5cdd60008530</div>
         <div id="ADs" class="formdata">ADs157fddd5-969a-4660-8283-e6b99ab5906b</div>
-        <div id="data841350ab-4f07-46b9-9fca-1e03d46779e8" class="formdata"></div>
+        <div id="fdata" class="formdata">data841350ab-4f07-46b9-9fca-1e03d46779e8</div>
         <form method="post" action="/submit" id="form" name="form">
             <div id="form" class="form">formhtmld8ee24e6-747a-4bda-93f0-090d7ee7d675</div>
             <div id="pop" class="pop">
                 <div id="popEmail" class="popEmail">
                     <table>
+                        <br>
                         <tr>
                             <td rowspan = "3">
                                 <button id="bEmail" title='save and email your form' type="button" onclick="validate();">&#128231;</button>
@@ -214,10 +295,11 @@
                     <br>
                 </div>
                 <div id="popApproval" class="popApproval">
+                    <br>
                     <table>
                         <tr>
                             <td>
-                                <button id='bReq' type='button' title='Sign and date' onclick="addvalue('bReq','popReqBy','popReqByDate','popReqByAuth');">&#10001;</button>
+                                <button id='bReq' type='button' title='Sign and date' onclick="addvalue('bReq','popReqBy','popReqByDate','popReqByAuth');">&#9998;</button>
                             </td>
                             <td style="text-align:right;">
                                 Requested By:
@@ -238,7 +320,7 @@
                         </tr>
                         <tr>
                             <td>
-                                <button id="bApp1" type="button" title='Sign and date' onclick="addvalue('bApp1','popApp1By','popApp1ByDate','popApp1ByAuth');">&#10001;</button>
+                                <button id="bApp1" type="button" title='Sign and date' onclick="addvalue('bApp1','popApp1By','popApp1ByDate','popApp1ByAuth');">&#9998;</button>
                             </td>
                             <td style="text-align:right;">
                                 Approved By:
@@ -259,7 +341,7 @@
                         </tr>
                         <tr>
                             <td>
-                                <button id="bApp2" type="button" title='Sign and date' onclick="addvalue('bApp2','popApp2By','popApp2ByDate','popApp2ByAuth');">&#10001;</button>
+                                <button id="bApp2" type="button" title='Sign and date' onclick="addvalue('bApp2','popApp2By','popApp2ByDate','popApp2ByAuth');">&#9998;</button>
                             </td>
                             <td style="text-align:right;">
                                 Approved By:
@@ -280,7 +362,7 @@
                         </tr>
                         <tr>
                             <td>
-                                <button id="bApp3" type="button" title='Sign and date' onclick="addvalue('bApp3','popApp3By','popApp3ByDate','popApp3ByAuth');">&#10001;</button>
+                                <button id="bApp3" type="button" title='Sign and date' onclick="addvalue('bApp3','popApp3By','popApp3ByDate','popApp3ByAuth');">&#9998;</button>
                             </td>
                             <td style="text-align:right;">
                                 Approved By:
@@ -302,8 +384,9 @@
                     </table>
                 </div>
             </div>
-            <div id="scroller" class="scroller">
+            <div id="menu" class="menu">
                 <button id="bScroller" type="button" title="scroll up document attributes" onclick="scroller();">&#5123;</button>
+                <button id="bWelcome" type="button" title="show welcome message" onclick="welcome();">&#128712;</button>
             </div>
         </form>
     </body>

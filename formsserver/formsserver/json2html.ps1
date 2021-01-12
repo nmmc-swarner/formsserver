@@ -40,12 +40,15 @@ foreach ($j in $jobj) {
         $normalfont = $h['normalfont'];
         $normalsize = $h['normalsize'];
         $wunit = [int]([measurestring]::fontWidth($normalfont, $normalsize, "00") / 2);
+        $title = $h['title'];
+        $description = $h['description'];
+        $approval = $h['approval'];
     }
     if ($null -ne $h['x']) {
+        if ($h['y'] -gt $maxy) {
+            $maxy = $h['y'];
+        }
         if ($null -ne $h['value'] -or $null -ne $h['type']) {
-            if ($h['y'] -gt $maxy) {
-                $maxy = $h['y'];
-            }
             $html += '<div style="position: fixed; left:{0}px; top: {1}px; font-size: {2}px; font-family: {3};' -f [int]($h['x'] * $wunit), $h['y'], $h['fontSize'], $h['fontName'];
 
             if ($null -ne $h['fontBold']) {
@@ -88,6 +91,13 @@ foreach ($j in $jobj) {
             $html += '</select>';
             $html += "`n";
             $html += '</div>';
+            $html += "`n";
+        }
+        if ($null -ne $h['formula']) {
+            $html += '<div style="position: fixed; left:{0}px; top: {1}px; font-size: {2}px; font-family: {3};' -f [int]($h['x'] * $wunit), $h['y'], $h['fontSize'], $h['fontName'];
+            $size = [int]($h['width'] * $wunit);
+            $html += '"><input id={0} name={0} type=text style="width: {2}px; font-family:inherit;" class="formula" formula=''{3}''></div>' -f ($h['id'], $h['type'], $size, $h['formula']);
+
             $html += "`n";
         }
     }
@@ -146,7 +156,11 @@ if ($null -eq $aduser.Name) {
     $ADs = ("{0} {1} {2} {3}" -f $ip, $user, $session, $logontime);
 }
 
-((Get-Content './form.html') -replace ('ADn7ae5aea0-4552-4d6e-97c6-81de833c99cc', $ADn) `
--replace ('ADe181dde0b-974d-40ab-ae86-5cdd60008530', $ADe) -replace ('formhtmld8ee24e6-747a-4bda-93f0-090d7ee7d675', $html)) `
+((Get-Content './form.html') -replace ('title4930cd57-0961-4f30-92d7-4eb5c3e8381b', $title) `
+-replace ('description50457d64-1baa-480b-905c-b59dd8086dde', $description) `
+-replace ('approval7d0aac5d-47c2-4e0c-8bc4-23761efa7a0e', $approval) `
+-replace ('ADn7ae5aea0-4552-4d6e-97c6-81de833c99cc', $ADn) `
+-replace ('ADe181dde0b-974d-40ab-ae86-5cdd60008530', $ADe) `
+-replace ('formhtmld8ee24e6-747a-4bda-93f0-090d7ee7d675', $html)) `
 -replace ('ADs157fddd5-969a-4660-8283-e6b99ab5906b', $ADs) | Set-Content $htmlfile;
 
