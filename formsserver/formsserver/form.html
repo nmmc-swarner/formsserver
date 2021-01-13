@@ -146,26 +146,33 @@
                 }
             }
             function calc(e,f) {
-                console.log('calc!');
-                console.log(e.id);
-                console.log(f);
-
                 // target element to hold calculated value
-                var arr = f.match(/([A-Z]+\d+)=/g);
+                let arr = f.match(/([A-Z]+\d+)=/g);
                 let target = document.getElementById(arr[0].replace(/=/, ''));
 
                 // replace formula ids with element values
-                let feval = f.replace(/[A-Z]+\d+=?\+/, '');
-                console.log(feval);
-
-                /*
-                let arr = f.match(/([A-Z]\d+)/g);
-                for (var j=0; j < arr.length; j++) {
-                    var elem = document.getElementById(arr[j]);
-                    elem.addEventListener('input', function(){calc(this, f);});
-                }
-                */
+                let feval = f.replace(/[A-Z]+\d+=/, '');
+                console.log('calculation..........................');
                 console.log(target.id);
+
+                let farr = feval.match(/([A-Z]\d+)/g);
+                console.log(farr);
+                for (var j=0; j < farr.length; j++) {
+                    console.log('element id = ' + farr[j]);
+                    console.log('formula = ' + feval);
+                    var elem = document.getElementById(farr[j]);
+                    feval = feval.replace(elem.id, elem.value * 1);
+                }
+                target.value = eval(feval);
+                if (null != target.getAttribute('formula')) {
+                    try {
+                        //target.dispatchEvent(input);
+                        cancelled = !target.dispatchEvent(input);
+                    }
+                    catch(err) {
+                        console.log('Unable to dispatch event');
+                    }
+                }
             }
             function welcome() {
                 var ftitle = document.getElementById('ftitle');
@@ -215,24 +222,20 @@
                 for (var i=0; i < formula.length; i++) {
                     let fattr = formula[i].getAttribute('formula');
                     const f = formula[i].id + fattr;
-                    if (/SUM/.test(fattr)) {
-                        var arr = fattr.match(/([A-Z]+\d+)/g);
-                        let sumC = arr[0].replace(/\d+/,'');
-                        let sumR = arr[0].replace(/[A-Z]+/,'') * 1;
-                        let maxR = arr[1].replace(/[A-Z]+/,'') * 1;
-                        console.log(sumC, sumR, maxR);
-                        do {
-                            let t = sumC + sumR;
-                            var elem = document.getElementById(t);
+                    arr = fattr.match(/([A-Z]\d+)/g);
+                    for (var j=0; j < arr.length; j++) {
+                        var elem = document.getElementById(arr[j]);
+                        if (null == elem.getAttribute('formula')) {
                             elem.addEventListener('input', function(){calc(this, f);});
-                            sumR++;
-                        } while(sumR <= maxR);
-                    }
-                    else {
-                        arr = f.match(/([A-Z]\d+)/g);
-                        for (var j=0; j < arr.length; j++) {
-                            var elem = document.getElementById(arr[j]);
-                            elem.addEventListener('input', function(){calc(this, f);});
+                        }
+                        else {
+                            try {
+                                input = new Event('calc');
+                            }
+                            catch(err) {
+                                input = new CustomEvent('calc');    // doesn't work in IE
+                            }
+                            elem.addEventListener('calc', function(){calc(this, f);});
                         }
                     }
                 }
