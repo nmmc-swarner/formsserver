@@ -69,9 +69,9 @@ foreach ($j in $jobj) {
                 } else {
                     $size = [int]($h['width'] * $wunit);
                     if ($h['type'] -eq 'date') {
-                        $html += '"><input id={0} name={0} type="{1}" placeholder="mm/dd/yyyy" style="width: {2}px; font-family:inherit;"></div>' -f ($h['id'], $h['type'], $size);
+                        $html += '"><input id={0} name={0} type="{1}" placeholder="mm/dd/yyyy" style="width: {2}px; height: {3}px; font-family:inherit;"></div>' -f ($h['id'], $h['type'], $size, $h['height']);
                     } else {
-                        $html += '"><input id={0} name={0} type="{1}" style="width: {2}px; font-family:inherit;"></div>' -f ($h['id'], $h['type'], $size);
+                        $html += '"><input id={0} name={0} type="{1}" style="width: {2}px; height: {3}px; font-family:inherit;"></div>' -f ($h['id'], $h['type'], $size, $h['height']);
                     }
                 }
             } else {
@@ -82,7 +82,7 @@ foreach ($j in $jobj) {
         }
         if ($null -ne $h['validation']) {
             $html += '<div style="position: fixed; left:{0}px; top: {1}px; font-size: {2}px; font-family: {3};' -f [int]($h['x'] * $wunit), $h['y'], $h['fontSize'], $h['fontName'];
-            $html += '"><select id={0} name={0} style="width: {1}px;">' -f $h['id'], [int]($h['width'] * $wunit);
+            $html += '"><select id={0} name={0} style="width: {1}px; height: {2}px;">' -f $h['id'], [int]($h['width'] * $wunit), $h['height'];
             $html += "`n";
             $h['validation'].GetEnumerator() | % {
                 $html += ('<option value="{0}">{1}</option>' -f $_, $_);
@@ -96,7 +96,7 @@ foreach ($j in $jobj) {
         if ($null -ne $h['formula']) {
             $html += '<div style="position: fixed; left:{0}px; top: {1}px; font-size: {2}px; font-family: {3};' -f [int]($h['x'] * $wunit), $h['y'], $h['fontSize'], $h['fontName'];
             $size = [int]($h['width'] * $wunit);
-            $html += '"><input id={0} name={0} type=text style="width: {2}px; font-family:inherit;" class="formula" formula=''{3}''></div>' -f ($h['id'], $h['type'], $size, $h['formula']);
+            $html += '"><input id={0} name={0} type=text style="width: {2}px; height: {3}px; font-family:inherit;" class="formula" formula=''{4}''></div>' -f ($h['id'], $h['type'], $size, $h['height'], $h['formula']);
 
             $html += "`n";
         }
