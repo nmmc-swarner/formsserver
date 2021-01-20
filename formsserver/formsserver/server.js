@@ -15,15 +15,16 @@ const os = require('os');
 const uuid = require('uuid');
 const child_process = require('child_process');
 const nodemailer = require('nodemailer');
+const { exit } = require('process');
+
+const isLive = __dirname == 'C:\scripts\nodejs\formsserver';
 
 //const { exit } = require('process');
 //const { exception } = require('console');
 
 const jsondir = '\\\\file01\\data\\nmmc documents\\Scripts\\excelToJson\\';
 
-// sendemail();
-
-function sendemail() {
+function sendemail(mailoptions) {
     let transporter = nodemailer.createTransport({
         host: '10.1.1.96',
         port: 587,
@@ -34,12 +35,6 @@ function sendemail() {
         },
         tls: { rejectUnauthorized: false }
     });
-    let mailoptions = {
-        from: 'script.user@nmmc.org',
-        to: 'scott.warner@nmmc.org',
-        subject: 'Ahoy',
-        text: 'this was easy'
-    }
     transporter.sendMail(mailoptions, (err, info) => {
         if (err) throw (err);
         console.log(`Sent: ${info.response}`);
@@ -49,6 +44,27 @@ function sendemail() {
 
 // ------------------------------------------------------------------------------------------
 // variables
+let fname = '';
+let names = [];
+
+function editing(dname) {
+    var index = -1;
+    console.log(names);
+    names.forEach((n, i)=>{
+        if (n['dname'] === dname && n['counter'] > -2) {
+            index = i;
+        }
+    });
+    return index;
+}
+
+var interval = setInterval(()=>{
+    names.forEach((n) =>{
+        if (n['counter'] > -2) {
+            n['counter']--;
+        }
+    });
+}, 5000);
 
 // ------------------------------------------------------------------------------------------
 // server
@@ -56,16 +72,30 @@ http.createServer(function (req, res) {
     const params = new URLSearchParams(req.url.slice(1)); // starts with a /
     const action = params.get('q');
 
-    var ip = req.connection.remoteAddress;
-    var usr = os.userInfo().username;
+    let ip = req.connection.remoteAddress;
+    let usr = os.userInfo().username;
 
     console.log(req.url);
     console.log(req.method);
     console.log(action);
 
+    if (req.method === 'PUT' && action === 'getform') {
+        var dname = params.get('dname');
+        console.log(dname);
+        var index = editing(dname);
+        if (index === -1) {
+            names.push({
+                dname: dname,
+                counter: 1,
+            });
+        }
+        else {
+            names[index]['counter']++;
+        }
+    }
     if (req.method === 'POST') {
         if (action === 'makeform') {
-            var fname = params.get('fname')
+            fname = params.get('fname')
             var u = uuid.v1();
             var uname = `${fname}-${u}.html`;
             console.log(ip);
@@ -86,12 +116,41 @@ http.createServer(function (req, res) {
         req.on('data', (chunk) => {
             body.push(chunk);
         }).on('end', () => {
+            var u = uuid.v1();
+            var dname = `${fname}-${u}.txt`;
+            var uname = `./formdata/${dname}`;
             body = Buffer.concat(body).toString();
 
-            console.log(body);
+            var bdict = qs.parse(body);
+            var from = unescape(bdict['popFrom']);
+            var to = unescape(bdict['popTo']);
+            var bcc = unescape(bdict['popCc']);
+            var subject = unescape(bdict['popSubject']).replace('+', ' ');
+            var link = `http://server:1342/q=getform&fname=${fname}&dname=${dname}`
 
-            res.writeHead(200, { 'Content-Type': 'text/html' })
-            res.write(body);
+            console.log('from');
+
+            if (isLive) {
+                link = link.replace('server', 'scripts');
+            }
+            else {
+                link = link.replace('server', '10.1.2.63');
+            }
+
+            sendemail({
+                from: from,
+                to: [from, to],
+                bc: bcc,
+                subject: subject,
+                html: `<a href=${link}>Click here!</a>`
+            });
+
+            fs.writeFile(uname, body, (err) => {
+                if (err) throw err;
+            });
+
+            res.statusCode=302;
+            res.setHeader('Location','/');
             res.end();
         });
     }
@@ -120,6 +179,35 @@ http.createServer(function (req, res) {
                 res.write(Buffer.from(hstr, 'utf-8'));
                 res.end();
             });
+        }
+        if (action === 'getform') {
+            fname = params.get('fname');
+            var dname = params.get('dname');
+            if (editing(dname) === -1) {
+                var u = uuid.v1();
+                var uname = `${fname}-${u}.html`;
+                console.log(ip);
+                child_process.execSync(`powershell -ExecutionPolicy Bypass -File ./json2html.ps1 "${jsondir}${fname}" "./html/${uname}" "${ip}" "${usr}"`);
+    
+                fs.readFile(`./html/${uname}`, null, (err, html) => {
+                    if (err) throw err;
+                    var hstr = html.toString();
+                    fs.readFile(`./formdata/${dname}`, null, (err, data) => {
+                        if (err) throw err;
+    
+                        hstr = hstr.replace('data841350ab-4f07-46b9-9fca-1e03d46779e8', data);
+    
+                        res.writeHead(200, { 'Content-Type': 'text/html' })
+                        res.write(Buffer.from(hstr, 'utf-8'));
+                        res.end();
+                    });
+                });
+            }
+            else {
+                res.writeHead(200, { 'Content-Type': 'text/html' })
+                res.write('That form is currently being edited.');
+                res.end();
+            }
         }
     }
 }).listen(port);

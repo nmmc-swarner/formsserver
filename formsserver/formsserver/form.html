@@ -46,11 +46,6 @@
             }
             .popEmail {
                 top: calc(100vh + 70px);
-                height: 125px;
-            }
-            .popApproval {
-                top: calc(100vh + 200px);
-                height: 270px;
             }
             .popEmail, .popApproval {
                 position: absolute;
@@ -84,6 +79,25 @@
         <script src="http://code.jquery.com/jquery-2.1.4.min.js"></script>
         <script src="http://cdn.jsdelivr.net/webshim/1.14.5/polyfiller.js"></script>
         <script>
+            /**
+             * CustomEvent() polyfill
+             * https://developer.mozilla.org/en-US/docs/Web/API/CustomEvent/CustomEvent#Polyfill
+             */
+            (function () {
+
+                if (typeof window.CustomEvent === 'function') return false;
+
+                function CustomEvent(event, params) {
+                    params = params || { bubbles: false, cancelable: false, detail: undefined };
+                    var evt = document.createEvent('CustomEvent');
+                    evt.initCustomEvent(event, params.bubbles, params.cancelable, params.detail);
+                    return evt;
+                }
+
+                CustomEvent.prototype = window.Event.prototype;
+
+                window.CustomEvent = CustomEvent;
+            })();
             webshims.polyfill('forms forms-ext');
             function validate() {
                 var re = /[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?/;
@@ -152,25 +166,18 @@
 
                 // replace formula ids with element values
                 let feval = f.replace(/[A-Z]+\d+=/, '');
-                console.log('calculation..........................');
-                console.log(target.id);
-
                 let farr = feval.match(/([A-Z]\d+)/g);
-                console.log(farr);
                 for (var j=0; j < farr.length; j++) {
-                    console.log('element id = ' + farr[j]);
-                    console.log('formula = ' + feval);
                     var elem = document.getElementById(farr[j]);
                     feval = feval.replace(elem.id, elem.value * 1);
                 }
                 target.value = eval(feval);
                 if (null != target.getAttribute('formula')) {
                     try {
-                        //target.dispatchEvent(input);
-                        cancelled = !target.dispatchEvent(input);
+                        target.dispatchEvent(input);
                     }
                     catch(err) {
-                        console.log('Unable to dispatch event');
+                        console.log(err.message);
                     }
                 }
             }
@@ -189,11 +196,17 @@
                 var fdata = document.getElementById('fdata'); 
                 var data = fdata.innerHTML;
                 console.log(data);
+                
+                var popSubject = document.getElementById('popSubject');
+                var ftitle = document.getElementById('ftitle');
+                popSubject.value = 'My Form "' + ftitle.innerHTML + '"';
+
                 var pairs = data.split('&amp;');
                 for (var i=0; i < pairs.length; i++) {
                     var pp = pairs[i].split('=');
                     console.log(pp);
                     try {
+                        console.log(pp[0], pp[1]);
                         var ppelem = document.getElementById(pp[0]);
                         var s = pp[1].replace(/\+/g, ' ');
                         ppelem.value = unescape(s);
@@ -207,10 +220,6 @@
                 var popFrom = document.getElementById('popFrom');
                 var ADe = document.getElementById('ADe');
                 popFrom.value = ADe.innerHTML;
-
-                var popSubject = document.getElementById('popSubject');
-                var ftitle = document.getElementById('ftitle');
-                popSubject.value = 'My Form "' + ftitle.innerHTML + '"';
 
                 var popApproval = document.getElementById('popApproval');
                 var fapproval = document.getElementById('fapproval');
@@ -229,19 +238,29 @@
                             elem.addEventListener('input', function(){calc(this, f);});
                         }
                         else {
-                            try {
-                                input = new Event('calc');
-                            }
-                            catch(err) {
-                                input = new CustomEvent('calc');    // doesn't work in IE
-                            }
+                            input = new CustomEvent('calc', { bubbles: true});
                             elem.addEventListener('calc', function(){calc(this, f);});
                         }
                     }
                 }
+                // get the dimensions of the overlay
+                var pe = document.getElementById('popEmail');
+                var peRect = pe.getBoundingClientRect();
+                pe.style.height = peRect.height;
+
+                var pa = document.getElementById('popApproval');
+                var paRect = pa.getBoundingClientRect();
+                pa.style.height = paRect.height;
+                pa.style.top = 'calc(100vh + 75px + ' + peRect.height + 'px )';
+
                 welcome();
             }
             window.onload = loaded;
+            window.setInterval(function() {
+                var xhr = new XMLHttpRequest();
+                xhr.open('PUT', window.location.href);
+                xhr.send(null);
+            }, 5000);
         </script>
     </head>
     <body>
@@ -266,7 +285,7 @@
                                 From:
                             </td>
                             <td>
-                                <input id='popFrom' name='popFrom' type='text' size=50 />
+                                <input id='popFrom' name='popFrom' type='text' size=50  readonly='readonly' />
                             </td>
                         </tr>
                         <tr>
@@ -385,6 +404,7 @@
                             </td>
                         </tr>
                     </table>
+                    <br>
                 </div>
             </div>
             <div id="menu" class="menu">

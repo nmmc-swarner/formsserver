@@ -5,7 +5,7 @@ param (
     [string] $usr
 )
 
-[Reflection.Assembly]::LoadFile("u://json2html/measurestring.dll");
+[Reflection.Assembly]::LoadFile("C:\scripts\nodejs\formsserver\measurestring.dll");
 
 function ConvertTo-Hashtable { 
     param ( 
@@ -49,7 +49,7 @@ foreach ($j in $jobj) {
             $maxy = $h['y'];
         }
         if ($null -ne $h['value'] -or $null -ne $h['type']) {
-            $html += '<div style="position: fixed; left:{0}px; top: {1}px; font-size: {2}px; font-family: {3};' -f [int]($h['x'] * $wunit), $h['y'], $h['fontSize'], $h['fontName'];
+            $html += '<div style="position: fixed; left:{0}px; top: {1}px; font-size: {2}px; font-family: {3};' -f [int]($h['x'] * $wunit), [int]$h['y'], $h['fontSize'], $h['fontName'];
 
             if ($null -ne $h['fontBold']) {
                 $html += 'font-weight: bold;'
@@ -65,13 +65,13 @@ foreach ($j in $jobj) {
 
             if ($null -ne $h['type']) {
                 if ($h['type'] -eq 'textarea') {
-                    $html += '"><textarea id={0} name={0} rows={1} cols={2} style="font-family:inherit;"></textarea></div>' -f ($h['id'], ($h['height'] / ($normalsize * 1.5)), $h['width']);
+                    $html += '"><textarea id={0} name={0} rows={1} cols={2} style="font-family:inherit;"></textarea></div>' -f ($h['id'], [int]($h['height'] / ($normalsize * 1.5)), [int]$h['width']);
                 } else {
                     $size = [int]($h['width'] * $wunit);
                     if ($h['type'] -eq 'date') {
-                        $html += '"><input id={0} name={0} type="{1}" placeholder="mm/dd/yyyy" style="width: {2}px; height: {3}px; font-family:inherit;"></div>' -f ($h['id'], $h['type'], $size, $h['height']);
+                        $html += '"><input id={0} name={0} type="{1}" placeholder="mm/dd/yyyy" style="width: {2}px; height: {3}px; font-family:inherit;"></div>' -f ($h['id'], $h['type'], $size, [int]$h['height']);
                     } else {
-                        $html += '"><input id={0} name={0} type="{1}" style="width: {2}px; height: {3}px; font-family:inherit;"></div>' -f ($h['id'], $h['type'], $size, $h['height']);
+                        $html += '"><input id={0} name={0} type="{1}" style="width: {2}px; height: {3}px; font-family:inherit;"></div>' -f ($h['id'], $h['type'], $size, [int]$h['height']);
                     }
                 }
             } else {
@@ -81,8 +81,8 @@ foreach ($j in $jobj) {
             $html += "`n";
         }
         if ($null -ne $h['validation']) {
-            $html += '<div style="position: fixed; left:{0}px; top: {1}px; font-size: {2}px; font-family: {3};' -f [int]($h['x'] * $wunit), $h['y'], $h['fontSize'], $h['fontName'];
-            $html += '"><select id={0} name={0} style="width: {1}px; height: {2}px;">' -f $h['id'], [int]($h['width'] * $wunit), $h['height'];
+            $html += '<div style="position: fixed; left:{0}px; top: {1}px; font-size: {2}px; font-family: {3};' -f [int]($h['x'] * $wunit), [int]$h['y'], $h['fontSize'], $h['fontName'];
+            $html += '"><select id={0} name={0} style="width: {1}px; height: {2}px;">' -f $h['id'], [int]($h['width'] * $wunit), [int]$h['height'];
             $html += "`n";
             $h['validation'].GetEnumerator() | % {
                 $html += ('<option value="{0}">{1}</option>' -f $_, $_);
@@ -94,9 +94,9 @@ foreach ($j in $jobj) {
             $html += "`n";
         }
         if ($null -ne $h['formula']) {
-            $html += '<div style="position: fixed; left:{0}px; top: {1}px; font-size: {2}px; font-family: {3};' -f [int]($h['x'] * $wunit), $h['y'], $h['fontSize'], $h['fontName'];
+            $html += '<div style="position: fixed; left:{0}px; top: {1}px; font-size: {2}px; font-family: {3};' -f [int]($h['x'] * $wunit), [int]$h['y'], $h['fontSize'], $h['fontName'];
             $size = [int]($h['width'] * $wunit);
-            $html += '"><input id={0} name={0} type=text style="width: {2}px; height: {3}px; font-family:inherit;" class="formula" formula=''{4}''></div>' -f ($h['id'], $h['type'], $size, $h['height'], $h['formula']);
+            $html += '"><input id={0} name={0} type=text style="width: {2}px; height: {3}px; font-family:inherit;" class="formula" formula=''{4}''></div>' -f ($h['id'], $h['type'], $size, [int]$h['height'], $h['formula']);
 
             $html += "`n";
         }
