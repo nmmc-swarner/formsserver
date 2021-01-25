@@ -17,7 +17,8 @@ const child_process = require('child_process');
 const nodemailer = require('nodemailer');
 const { exit } = require('process');
 
-const isLive = __dirname == 'C:\scripts\nodejs\formsserver';
+const isLive = __dirname + '' == 'C:\\scripts\\nodejs\\formsserver';
+console.log(isLive);
 
 //const { exit } = require('process');
 //const { exception } = require('console');
@@ -48,20 +49,15 @@ let fname = '';
 let names = [];
 
 function editing(dname) {
-    var index = -1;
-    console.log(names);
-    names.forEach((n, i)=>{
-        if (n['dname'] === dname && n['counter'] > -2) {
-            index = i;
-        }
-    });
-    return index;
+    let n = names.find(n => n.dname === dname && n.counter > -2) || null;
+    return n;
 }
 
 var interval = setInterval(()=>{
+    console.log(names);
     names.forEach((n) =>{
-        if (n['counter'] > -2) {
-            n['counter']--;
+        if (n.counter > -2) {
+            n.counter--;
         }
     });
 }, 5000);
@@ -82,16 +78,19 @@ http.createServer(function (req, res) {
     if (req.method === 'PUT' && action === 'getform') {
         var dname = params.get('dname');
         console.log(dname);
-        var index = editing(dname);
-        if (index === -1) {
+        var n = editing(dname);
+        if (n === null) {
             names.push({
                 dname: dname,
+                ip: ip,
                 counter: 1,
             });
         }
         else {
-            names[index]['counter']++;
+            n.counter++;
         }
+        res.writeHead(204);
+        res.end();
     }
     if (req.method === 'POST') {
         if (action === 'makeform') {
@@ -126,10 +125,15 @@ http.createServer(function (req, res) {
             var to = unescape(bdict['popTo']);
             var bcc = unescape(bdict['popCc']);
             var subject = unescape(bdict['popSubject']).replace('+', ' ');
+            var message = unescape(bdict['popMessage']).replace('+', ' ').replace('\n', '<br>');
+
+            console.log(bdict['popMessage']);
+
             var link = `http://server:1342/q=getform&fname=${fname}&dname=${dname}`
 
             console.log('from');
 
+            console.log(isLive);
             if (isLive) {
                 link = link.replace('server', 'scripts');
             }
@@ -142,7 +146,7 @@ http.createServer(function (req, res) {
                 to: [from, to],
                 bc: bcc,
                 subject: subject,
-                html: `<a href=${link}>Click here!</a>`
+                html: `<a href=${link}>Click here!</a><br><br>Message:<br>${message}`
             });
 
             fs.writeFile(uname, body, (err) => {
@@ -183,7 +187,9 @@ http.createServer(function (req, res) {
         if (action === 'getform') {
             fname = params.get('fname');
             var dname = params.get('dname');
-            if (editing(dname) === -1) {
+            console.log(editing(dname));
+            let n = editing(dname);
+            if (n === null) {
                 var u = uuid.v1();
                 var uname = `${fname}-${u}.html`;
                 console.log(ip);
@@ -205,7 +211,7 @@ http.createServer(function (req, res) {
             }
             else {
                 res.writeHead(200, { 'Content-Type': 'text/html' })
-                res.write('That form is currently being edited.');
+                res.write(`That form is currently being edited at ${n.ip}.`);
                 res.end();
             }
         }
