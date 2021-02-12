@@ -7,103 +7,109 @@ param (
 
 [Reflection.Assembly]::LoadFile("C:\scripts\nodejs\formsserver\measurestring.dll");
 
-function ConvertTo-Hashtable { 
-    param ( 
-        [Parameter(  
-            Position = 0,   
-            Mandatory = $true,   
-            ValueFromPipeline = $true,  
-            ValueFromPipelineByPropertyName = $true  
-        )] [object] $psCustomObject 
-    );
-    $output = @{}; 
-    $psCustomObject | Get-Member -MemberType *Property | % {
-        $output.($_.name) = $psCustomObject.($_.name); 
-    } 
-    return  $output;
+$sb = [System.Text.StringBuilder]::new();
+function buildString($s) {
+    [void]$sb.Append($s);
 }
 
 $json = Get-Content $jsonfile;
 
 $jobj = ($json | ConvertFrom-Json);
 
-# text input is measured in em. 1em == 11px
-
-# need to add empty elements to fill the page for the popups  ................................ TO DO
-
 $maxy = 0;
 
 foreach ($j in $jobj) {
-    $h = $j | ConvertTo-Hashtable
-
-    if ($null -ne $h['normalfont']) {
-        $normalfont = $h['normalfont'];
-        $normalsize = $h['normalsize'];
+    if ($null -ne $j.normalfont) {
+        $normalfont = $j.normalfont;
+        $normalsize = $j.normalsize;
         $wunit = [int]([measurestring]::fontWidth($normalfont, $normalsize, "00" / 2));
         $hunit = 1.05;
         $adjunit = 1.01;
-        $title = $h['title'];
-        $description = $h['description'];
-        $approval = $h['approval'];
+        $title = $j.title;
+        $description = $j.description;
+        $approval = $j.approval;
     }
-    if ($null -ne $h['x']) {
-        if ($h['y'] -gt $maxy) {
-            $maxy = $h['y'];
+    if ($null -ne $j.x) {
+        if ($j.y -gt $maxy) {
+            $maxy = $j.y;
         }
-        if ($null -ne $h['value'] -or $null -ne $h['type']) {
-            $html += '<div style="position: absolute; left:{0}px; top: {1}px; font-size: {2}px; font-family: {3};' -f [int]($h['x'] * $wunit * $adjunit), [int]($h['y'] * $hunit), $h['fontSize'], $h['fontName'];
+        if ($null -ne $j.value -or $null -ne $j.type) {
+            buildString ('<div style="position: absolute; left:{0}px; top: {1}px; font-size: {2}px; font-family: {3};' -f [int]($j.x * $wunit * $adjunit), [int]($j.y * $hunit), $j.fontSize, $j.fontName);
+            buildString ('width: {0}px; height: {1}px;' -f [int]($j.width * $wunit), [int]$j.height);
 
-            if ($null -ne $h['fontBold']) {
-                $html += 'font-weight: bold;'
+            if ($null -ne $j.fontBold) {
+                buildString 'font-weight: bold;';
             }
-            if ($null -ne $h['fontColor']) {
-                $html += ('color: #{0};' -f $h['fontColor'])
+            if ($null -ne $j.fontItalic) {
+                buildString 'font-style: italic;';
             }
-            if ($null -ne $h['interiorColor']) {
-                $html += ('background-color: #{0};' -f $h['interiorColor'])
+            if ($null -ne $j.fontColor) {
+                buildString ('color: #{0};' -f $j.fontColor);
+            }
+            if ($null -ne $j.interiorColor) {
+                buildString ('background-color: #{0};' -f $j.interiorColor);
+            }
+            if ($null -ne $j.borderTopLineStyle) {
+                buildString ('border-top-style: {0};' -f @(Switch ($j.borderTopLineStyle) { '1' {'solid'} '-4115' {'dotted'} '-4118' {'dashed'} }));
+                buildString ('border-top-width: {0};' -f @(Switch ($j.borderTopWeight) { '1' {'1px'} '2' {'2px'} '-4138' {'3px'} '4' {'4px'}}));
+                buildString ('border-top-color: #{0};' -f $j.borderTopColor);
+            }
+            if ($null -ne $j.borderBottomLineStyle) {
+                buildString ('border-bottom-style: {0};' -f @(Switch ($j.borderBottomLineStyle) { '1' {'solid'} '-4115' {'dotted'} '-4118' {'dashed'} }));
+                buildString ('border-bottom-width: {0};' -f @(Switch ($j.borderBottomWeight) { '1' {'1px'} '2' {'2px'} '-4138' {'3px'} '4' {'4px'}}));
+                buildString ('border-bottom-color: #{0};' -f $j.borderBottomColor);
+            }
+            if ($null -ne $j.borderLeftLineStyle) {
+                buildString ('border-left-style: {0};' -f @(Switch ($j.borderLeftLineStyle) { '1' {'solid'} '-4115' {'dotted'} '-4118' {'dashed'} }));
+                buildString ('border-left-width: {0};' -f @(Switch ($j.borderLeftWeight) { '1' {'1px'} '2' {'2px'} '-4138' {'3px'} '4' {'4px'}}));
+                buildString ('border-left-color: #{0};' -f $j.borderLeftColor);
+            }
+            if ($null -ne $j.borderRightLineStyle) {
+                buildString ('border-right-style: {0};' -f @(Switch ($j.borderRightLineStyle) { '1' {'solid'} '-4115' {'dotted'} '-4118' {'dashed'} }));
+                buildString ('border-right-width: {0};' -f @(Switch ($j.borderRightWeight) { '1' {'1px'} '2' {'2px'} '-4138' {'3px'} '4' {'4px'}}));
+                buildString ('border-right-color: #{0};' -f $j.borderRightColor);
             }
 
-            # <textarea name="message" rows="10" cols="30"> textarea TAG instead of INPUT
-
-            if ($null -ne $h['type']) {
-                if ($h['type'] -eq 'textarea') {
-                    $html += '"><textarea id={0} name={0} rows={1} cols={2} style="font-family:inherit;"></textarea></div>' -f ($h['id'], [int]($h['height'] / ($normalsize * 1.5)), [int]$h['width']);
+            if ($null -ne $j.type) {
+                if ($j.type -eq 'textarea') {
+                    buildString ('"><textarea id={0} name={0} rows={1} cols={2} style="font-family:inherit;"></textarea></div>' -f ($j.id, [int]($j.height / ($normalsize * 1.5)), [int]$j.width));
                 } else {
-                    $size = [int]($h['width'] * $wunit);
-                    if ($h['type'] -eq 'date') {
-                        $html += '"><input id={0} name={0} type="{1}" placeholder="mm/dd/yyyy" style="width: {2}px; height: {3}px; font-family:inherit;"></div>' -f ($h['id'], $h['type'], $size, [int]$h['height']);
+                    $size = [int]($j.width * $wunit);
+                    if ($j.type -eq 'date') {
+                        buildString ('"><input id={0} name={0} type="{1}" placeholder="mm/dd/yyyy" style="width: {2}px; height: {3}px; font-family:inherit;"></div>' -f ($j.id, $j.type, $size, [int]$j.height));
                     } else {
-                        $html += '"><input id={0} name={0} type="{1}" style="width: {2}px; height: {3}px; font-family:inherit;"></div>' -f ($h['id'], $h['type'], $size, [int]$h['height']);
+                        buildString ('"><input id={0} name={0} type="{1}" style="width: {2}px; height: {3}px; font-family:inherit;"></div>' -f ($j.id, $j.type, $size, [int]$j.height));
                     }
                 }
             } else {
-                $html += '">{0}</div>' -f $h['value'];
+                buildString ('">{0}</div>' -f $j.value);
             }
 
-            $html += "`n";
+            buildString "`n";
         }
-        if ($null -ne $h['validation']) {
-            $html += '<div style="position: absolute; left:{0}px; top: {1}px; font-size: {2}px; font-family: {3};' -f [int]($h['x'] * $wunit * $adjunit), [int]($h['y'] * $hunit), $h['fontSize'], $h['fontName'];
-            $html += '"><select id={0} name={0} style="width: {1}px; height: {2}px; cont-family:inherit;">' -f $h['id'], [int]($h['width'] * $wunit), [int]$h['height'];
-            $html += "`n";
-            $h['validation'].GetEnumerator() | % {
-                $html += ('<option value="{0}">{1}</option>' -f $_, $_);
-                $html += "`n";
+        if ($null -ne $j.validation) {
+            buildString ('<div style="position: absolute; left:{0}px; top: {1}px; font-size: {2}px; font-family: {3};' -f [int]($j.x * $wunit * $adjunit), [int]($j.y * $hunit), $j.fontSize, $j.fontName);
+            buildString ('"><select id={0} name={0} style="width: {1}px; height: {2}px; cont-family:inherit;">' -f $j.id, [int]($j.width * $wunit), [int]$j.height);
+            buildString "`n";
+            $j.validation.GetEnumerator() | ForEach-Object {
+                buildString ('<option value="{0}">{1}</option>' -f $_, $_);
+                buildString "`n";
             }
-            $html += '</select>';
-            $html += "`n";
-            $html += '</div>';
-            $html += "`n";
+            buildString '</select>';
+            buildString "`n";
+            buildString '</div>';
+            buildString "`n";
         }
-        if ($null -ne $h['formula']) {
-            $html += '<div style="position: absolute; left:{0}px; top: {1}px; font-size: {2}px; font-family: {3};' -f [int]($h['x'] * $wunit * $adjunit), [int]($h['y'] * $hunit), $h['fontSize'], $h['fontName'];
-            $size = [int]($h['width'] * $wunit);
-            $html += '"><input id={0} name={0} type=text style="width: {2}px; height: {3}px; font-family:inherit;" class="formula" formula=''{4}''></div>' -f ($h['id'], $h['type'], $size, [int]$h['height'], $h['formula']);
-
-            $html += "`n";
+        if ($null -ne $j.formula) {
+            buildString ('<div style="position: absolute; left:{0}px; top: {1}px; font-size: {2}px; font-family: {3};' -f [int]($j.x * $wunit * $adjunit), [int]($j.y * $hunit), $j.fontSize, $j.fontName);
+            $size = [int]($j.width * $wunit);
+            buildString ('"><input id={0} name={0} type=text style="width: {2}px; height: {3}px; font-family:inherit;" class="formula" formula=''{4}''></div>' -f ($j.id, $j.type, $size, [int]$j.height, $j.formula));
+            buildString "`n";
         }
     }
 }
+
+$html = $sb.ToString();
 
 if ($ip -eq '::1') {
     $ip -eq '127.0.0.1'

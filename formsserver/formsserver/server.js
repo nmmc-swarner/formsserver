@@ -17,8 +17,16 @@ const child_process = require('child_process');
 const nodemailer = require('nodemailer');
 const { exit } = require('process');
 
-const isLive = __dirname + '' == 'C:\\scripts\\nodejs\\formsserver';
-console.log(isLive);
+const shell = require('node-powershell');
+let ps = new shell({
+  executionPolicy: 'Bypass',
+  noProfile: true
+});
+
+// const isLive = __dirname + '' == 'C:\\scripts\\nodejs\\formsserver';
+// console.log(isLive);
+
+const isLive = true; // note that this doesn't work on RDS
 
 //const { exit } = require('process');
 //const { exception } = require('console');
@@ -92,21 +100,30 @@ http.createServer(function (req, res) {
         res.writeHead(204);
         res.end();
     }
-    if (req.method === 'POST') {
+    if (req.method === 'POST'  || req.method === 'GET') {
         if (action === 'makeform') {
             fname = params.get('fname')
             var u = uuid.v1();
             var uname = `${fname}-${u}.html`;
             console.log(ip);
-            child_process.execSync(`powershell -ExecutionPolicy Bypass -File ./json2html.ps1 "${jsondir}${fname}" "./html/${uname}" "${ip}" "${usr}"`);
 
-            fs.readFile(`./html/${uname}`, null, (err, html) => {
-                if (err) throw err;
-                var hstr = html.toString();
-
-                res.writeHead(200, { 'Content-Type': 'text/html' })
-                res.write(Buffer.from(hstr, 'utf-8'));
-                res.end();
+            var start = process.hrtime();
+            ps.addCommand(`./json2html.ps1 "${jsondir}${fname}" "./html/${uname}" "${ip}" "${usr}"`);
+            ps.invoke()
+            .then((result)=>{
+                ps.clear()
+                .then((result)=>{
+                    var end = process.hrtime(start);
+                    console.log(end);
+                    fs.readFile(`./html/${uname}`, null, (err, html) => {
+                        if (err) throw err;
+                        var hstr = html.toString();
+        
+                        res.writeHead(200, { 'Content-Type': 'text/html' })
+                        res.write(Buffer.from(hstr, 'utf-8'));
+                        res.end();
+                    });
+                });
             });
         }
     }
@@ -193,19 +210,28 @@ http.createServer(function (req, res) {
                 var u = uuid.v1();
                 var uname = `${fname}-${u}.html`;
                 console.log(ip);
-                child_process.execSync(`powershell -ExecutionPolicy Bypass -File ./json2html.ps1 "${jsondir}${fname}" "./html/${uname}" "${ip}" "${usr}"`);
-    
-                fs.readFile(`./html/${uname}`, null, (err, html) => {
-                    if (err) throw err;
-                    var hstr = html.toString();
-                    fs.readFile(`./formdata/${dname}`, null, (err, data) => {
-                        if (err) throw err;
-    
-                        hstr = hstr.replace('data841350ab-4f07-46b9-9fca-1e03d46779e8', data);
-    
-                        res.writeHead(200, { 'Content-Type': 'text/html' })
-                        res.write(Buffer.from(hstr, 'utf-8'));
-                        res.end();
+
+                var start = process.hrtime();
+                ps.addCommand(`./json2html.ps1 "${jsondir}${fname}" "./html/${uname}" "${ip}" "${usr}"`);
+                ps.invoke()
+                .then((result)=>{
+                    ps.clear()
+                    .then((result)=>{
+                        var end = process.hrtime(start);
+                        console.log(end);
+                        fs.readFile(`./html/${uname}`, null, (err, html) => {
+                            if (err) throw err;
+                            var hstr = html.toString();
+                            fs.readFile(`./formdata/${dname}`, null, (err, data) => {
+                                if (err) throw err;
+            
+                                hstr = hstr.replace('data841350ab-4f07-46b9-9fca-1e03d46779e8', data);
+            
+                                res.writeHead(200, { 'Content-Type': 'text/html' })
+                                res.write(Buffer.from(hstr, 'utf-8'));
+                                res.end();
+                            });
+                        });
                     });
                 });
             }
