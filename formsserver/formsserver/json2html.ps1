@@ -1,9 +1,16 @@
+<#
 param (
     [string] $jsonfile,
     [string] $htmlfile,
     [string] $ip,
     [string] $usr
 )
+#>
+
+$jsonfile = '\\file01\data\nmmc documents\Scripts\excelToJson\sample.json';
+$htmlfile = 'test.html';
+$ip = '10.1.2.63';
+$usr = 'swarner';
 
 [Reflection.Assembly]::LoadFile("C:\scripts\nodejs\formsserver\measurestring.dll");
 
@@ -13,83 +20,132 @@ function buildString($s) {
 }
 
 $json = Get-Content $jsonfile;
-
 $jobj = ($json | ConvertFrom-Json);
-
-$maxy = 0;
 
 foreach ($j in $jobj) {
     if ($null -ne $j.normalfont) {
         $normalfont = $j.normalfont;
         $normalsize = $j.normalsize;
-        $wunit = [int]([measurestring]::fontWidth($normalfont, $normalsize, "00" / 2));
-        $hunit = 1.05;
-        $adjunit = 1.01;
+        $wunit = [int]([measurestring]::fontWidth($normalfont, $normalsize, "0") * .8);
         $title = $j.title;
         $description = $j.description;
         $approval = $j.approval;
-    }
-    if ($null -ne $j.x) {
-        if ($j.y -gt $maxy) {
-            $maxy = $j.y;
+        $preview = $j.preview;
+        [int32[]]$wArr = $j.wArr;
+        [int32[]]$hArr = $j.hArr;
+
+        $table = New-Object 'object[,]' ($hArr.length + 1), ($wArr.length + 1);
+
+        if ($preview) {
+            $table[0,0] = '<td width=5 height=5 style=" color: #A9A9A9; background-color: #e5e4e2;">&#x25e2</td>';
+
+            # table row 0 defines column widths
+            for ($c=0; $c -lt $wArr.length; $c++) {
+                $table[0, ($c + 1)] = '<td width={0} style="text-align: center; background-color: #e5e4e2;">{1}</td>' -f ($wArr[$c] * $wunit), [char]($c + 65);
+            }
+            # table column 0 defines row heights
+            for ($r=0; $r -lt $hArr.length; $r++) {
+                $table[($r + 1), 0] = '<td height={0} style=" background-color: #e5e4e2;">{1}</td>' -f $hArr[$r], ($r + 1);
+            }
+        } else {
+            $table[0,0] = '<td width=5 height=5 style=" color: #A9A9A9; background-color: #ffffff;"></td>';
+
+            # table row 0 defines column widths
+            for ($c=0; $c -lt $wArr.length; $c++) {
+                $table[0, ($c + 1)] = '<td width={0} style="text-align: center; background-color: #ffffff;"></td>' -f ($wArr[$c] * $wunit), [char]($c + 65);
+            }
+            # table column 0 defines row heights
+            for ($r=0; $r -lt $hArr.length; $r++) {
+                $table[($r + 1), 0] = '<td height={0} style=" background-color: #ffffff;"></td>' -f $hArr[$r], ($r + 1);
+            }
         }
-        if ($null -ne $j.value -or $null -ne $j.type) {
-            buildString ('<div style="position: absolute; left:{0}px; top: {1}px; font-size: {2}px; font-family: {3};' -f [int]($j.x * $wunit * $adjunit), [int]($j.y * $hunit), $j.fontSize, $j.fontName);
-            buildString ('width: {0}px; height: {1}px;' -f [int]($j.width * $wunit), [int]$j.height);
-
-            if ($null -ne $j.fontBold) {
-                buildString 'font-weight: bold;';
-            }
-            if ($null -ne $j.fontItalic) {
-                buildString 'font-style: italic;';
-            }
-            if ($null -ne $j.fontColor) {
-                buildString ('color: #{0};' -f $j.fontColor);
-            }
-            if ($null -ne $j.interiorColor) {
-                buildString ('background-color: #{0};' -f $j.interiorColor);
-            }
-            if ($null -ne $j.borderTopLineStyle) {
-                buildString ('border-top-style: {0};' -f @(Switch ($j.borderTopLineStyle) { '1' {'solid'} '-4115' {'dotted'} '-4118' {'dashed'} }));
-                buildString ('border-top-width: {0};' -f @(Switch ($j.borderTopWeight) { '1' {'1px'} '2' {'2px'} '-4138' {'3px'} '4' {'4px'}}));
-                buildString ('border-top-color: #{0};' -f $j.borderTopColor);
-            }
-            if ($null -ne $j.borderBottomLineStyle) {
-                buildString ('border-bottom-style: {0};' -f @(Switch ($j.borderBottomLineStyle) { '1' {'solid'} '-4115' {'dotted'} '-4118' {'dashed'} }));
-                buildString ('border-bottom-width: {0};' -f @(Switch ($j.borderBottomWeight) { '1' {'1px'} '2' {'2px'} '-4138' {'3px'} '4' {'4px'}}));
-                buildString ('border-bottom-color: #{0};' -f $j.borderBottomColor);
-            }
-            if ($null -ne $j.borderLeftLineStyle) {
-                buildString ('border-left-style: {0};' -f @(Switch ($j.borderLeftLineStyle) { '1' {'solid'} '-4115' {'dotted'} '-4118' {'dashed'} }));
-                buildString ('border-left-width: {0};' -f @(Switch ($j.borderLeftWeight) { '1' {'1px'} '2' {'2px'} '-4138' {'3px'} '4' {'4px'}}));
-                buildString ('border-left-color: #{0};' -f $j.borderLeftColor);
-            }
-            if ($null -ne $j.borderRightLineStyle) {
-                buildString ('border-right-style: {0};' -f @(Switch ($j.borderRightLineStyle) { '1' {'solid'} '-4115' {'dotted'} '-4118' {'dashed'} }));
-                buildString ('border-right-width: {0};' -f @(Switch ($j.borderRightWeight) { '1' {'1px'} '2' {'2px'} '-4138' {'3px'} '4' {'4px'}}));
-                buildString ('border-right-color: #{0};' -f $j.borderRightColor);
-            }
-
-            if ($null -ne $j.type) {
-                if ($j.type -eq 'textarea') {
-                    buildString ('"><textarea id={0} name={0} rows={1} cols={2} style="font-family:inherit;"></textarea></div>' -f ($j.id, [int]($j.height / ($normalsize * 1.5)), [int]$j.width));
-                } else {
-                    $size = [int]($j.width * $wunit);
-                    if ($j.type -eq 'date') {
-                        buildString ('"><input id={0} name={0} type="{1}" placeholder="mm/dd/yyyy" style="width: {2}px; height: {3}px; font-family:inherit;"></div>' -f ($j.id, $j.type, $size, [int]$j.height));
-                    } else {
-                        buildString ('"><input id={0} name={0} type="{1}" style="width: {2}px; height: {3}px; font-family:inherit;"></div>' -f ($j.id, $j.type, $size, [int]$j.height));
-                    }
+    } else {
+        $sb.Clear();
+        if ($preview) {
+            buildString '<td class="preview" ';
+        } else {
+            buildString '<td ';
+        }
+        
+        # add span
+        if ($null -ne $j.colspan) {
+            if ($j.rowspan -gt 1) {
+                $td_height = 0;
+                for ($i=$j.row; $i -lt $j.row + $j.rowspan; $i++) {
+                    $td_height += $hArr[$i];
                 }
             } else {
-                buildString ('">{0}</div>' -f $j.value);
+                $td_height = $hArr[$j.row];
             }
+            if ($j.colspan -gt 1) {
+                $td_width = 0;
+                for ($i=$j.col; $i -lt $j.col + $j.colspan; $i++) {
+                    $td_width += $wArr[$i];
+                }
+            } else {
+                $td_width = $wArr[$j.col];
+            }
+            buildString ('colspan={0} rowspan={1} width={2} height={3} ' -f $j.colspan, $j.rowspan, $td_width, $td_height);
+        } else {
+            buildString ('height={0} ' -f $hArr[$j.row]);
+        }
 
-            buildString "`n";
+        # add cell styling
+        buildString 'style="';
+
+        if ($null -ne $j.fontName) { buildString (' font-family: {0};' -f $j.fontName); }
+        if ($null -ne $j.fontSize) { buildString (' font-size: {0}px;' -f $j.fontSize); }
+        if ($null -ne $j.fontBold) { buildString (' font-weight: bold;'); }
+        if ($null -ne $j.fontItalic) { buildString (' font-style: italic;'); }
+        if ($null -ne $j.fontColor) { buildString (' color: {0};' -f $j.fontColor); }
+        if ($null -ne $j.interiorColor) { buildString (' background-color: {0};' -f $j.interiorColor); }
+
+        if ($null -ne $j.Halignment) {
+            if ($null -ne $j.value) {
+                $h = @(Switch ($j.value.GetType().Name) { 'int32' {'right'} 'decimal' {'right'} 'string' {'left'} default {'left'} });
+            }
+            buildString ('text-align: {0};' -f @(Switch ($j.Halignment) { '1' {$h} '-4108' {'center'} '-4131' {'left'} '-4152' {'right'} default {'left'} }));
+        }
+        if ($null -ne $j.Valignment) { buildString ('vertical-align: {0};' -f @(Switch ($j.Valignment) { '-4107' {'bottom'} '-4108' {'middle'} '-4160' {'text-top'} default {'middle'} })); }
+        if ($null -ne $j.borderTopLineStyle) {
+            buildString ('border-top-style: {0};' -f @(Switch ($j.borderTopLineStyle) { '1' {'solid'} '-4118' {'dotted'} '-4115' {'dashed'} default {'solid'} }));
+            buildString ('border-top-width: {0};' -f @(Switch ($j.borderTopWeight) { '1' {'1px'} '2' {'2px'} '-4138' {'3px'} '4' {'4px'} default {'1px'} }));
+            buildString ('border-top-color: {0};' -f $j.borderTopColor);
+        }
+        if ($null -ne $j.borderBottomLineStyle) {
+            buildString ('border-bottom-style: {0};' -f @(Switch ($j.borderBottomLineStyle) { '1' {'solid'} '-4118' {'dotted'} '-4115' {'dashed'} default {'solid'} }));
+            buildString ('border-bottom-width: {0};' -f @(Switch ($j.borderBottomWeight) { '1' {'1px'} '2' {'2px'} '-4138' {'3px'} '4' {'4px'} default {'1px'} }));
+            buildString ('border-bottom-color: {0};' -f $j.borderBottomColor);
+        }
+        if ($null -ne $j.borderLeftLineStyle) {
+            buildString ('border-left-style: {0};' -f @(Switch ($j.borderLeftLineStyle) { '1' {'solid'} '-4118' {'dotted'} '-4115' {'dashed'} default {'solid'} }));
+            buildString ('border-left-width: {0};' -f @(Switch ($j.borderLeftWeight) { '1' {'1px'} '2' {'2px'} '-4138' {'3px'} '4' {'4px'} default {'1px'} }));
+            buildString ('border-left-color: {0};' -f $j.borderLeftColor);
+        }
+        if ($null -ne $j.borderRightLineStyle) {
+            buildString ('border-right-style: {0};' -f @(Switch ($j.borderRightLineStyle) { '1' {'solid'} '-4118' {'dotted'} '-4115' {'dashed'} default {'solid'} }));
+            buildString ('border-right-width: {0};' -f @(Switch ($j.borderRightWeight) { '1' {'1px'} '2' {'2px'} '-4138' {'3px'} '4' {'4px'} default {'1px'} }));
+            buildString ('border-right-color: {0};' -f $j.borderRightColor);
+        }
+
+        # end cell styling
+        buildString '">';
+
+        # add content
+        if ($null -ne $j.type) {
+            if ($j.type -eq 'date') { buildString ('<input id={0} name={0} type="{1}" placeholder="mm/dd/yyyy" style="background-color:inherit; ">' -f ($j.id, $j.type)); }
+            if ($j.type -eq 'text') { buildString ('<input id={0} name={0} type="{1}" size=5 style="background-color:inherit;">' -f ($j.id, $j.type)); }
+            if ($j.type -eq 'textarea') { buildString ('<textarea id={0} name={0} style="background-color:inherit;"></textarea>' -f ($j.id)); }
+        }
+        if ($null -ne $j.formula) {
+            if ($preview) {
+                buildString ('<input readonly id={0} name={0} placeholder={1} type=text style="font-family:inherit; background-color:inherit;" class="formula" formula=''{1}''>' -f ($j.id, $j.formula));
+            } else {
+                buildString ('<input readonly id={0} name={0} type=text style="font-family:inherit; background-color:inherit;" class="formula" formula=''{1}''>' -f ($j.id, $j.formula));
+            }
         }
         if ($null -ne $j.validation) {
-            buildString ('<div style="position: absolute; left:{0}px; top: {1}px; font-size: {2}px; font-family: {3};' -f [int]($j.x * $wunit * $adjunit), [int]($j.y * $hunit), $j.fontSize, $j.fontName);
-            buildString ('"><select id={0} name={0} style="width: {1}px; height: {2}px; cont-family:inherit;">' -f $j.id, [int]($j.width * $wunit), [int]$j.height);
+            buildString ('<select id={0} name={0} style="font-family:inherit; background-color:inherit;">' -f $j.id, $j.fontName);
             buildString "`n";
             $j.validation.GetEnumerator() | ForEach-Object {
                 buildString ('<option value="{0}">{1}</option>' -f $_, $_);
@@ -97,19 +153,44 @@ foreach ($j in $jobj) {
             }
             buildString '</select>';
             buildString "`n";
-            buildString '</div>';
-            buildString "`n";
         }
-        if ($null -ne $j.formula) {
-            buildString ('<div style="position: absolute; left:{0}px; top: {1}px; font-size: {2}px; font-family: {3};' -f [int]($j.x * $wunit * $adjunit), [int]($j.y * $hunit), $j.fontSize, $j.fontName);
-            $size = [int]($j.width * $wunit);
-            buildString ('"><input id={0} name={0} type=text style="width: {2}px; height: {3}px; font-family:inherit;" class="formula" formula=''{4}''></div>' -f ($j.id, $j.type, $size, [int]$j.height, $j.formula));
-            buildString "`n";
+
+        if ($null -ne $j.value) {
+            if ($j.value.GetType().Name -eq 'int' -or $j.value.GetType().Name -eq 'decimal') {
+                Switch ($j.format) {
+                    'General' { buildString ('{0:g}' -f $j.value); }
+                    '0.00' { buildString ('{0:n}' -f $j.value); }
+                    '$#,##0.00_);[Red]($#,##0.00)' { buildString ('{0:c}' -f $j.value); }
+                    default  { buildString ('{0:g}' -f $j.value); }
+                }
+            } else {
+                buildString ('{0}' -f $j.value);
+            }
         }
+        # end cell
+        buildString '</td>';
+
+        # add to the array
+        $table[$j.row, $j.col] = $sb.ToString();
     }
 }
 
+$sb.Clear();
+buildString '<table>';
+for ($r = 0; $r -lt $hArr.Length; $r++) {
+    buildString '<tr>';
+    for ($c = 0; $c -lt $wArr.Length; $c++) {
+        buildString($table[$r, $c]);
+        buildString "`n";
+    }
+    buildString '</tr>';
+    buildString "`n";
+}
+buildString '</table>';
+
+
 $html = $sb.ToString();
+Write-Host $html;
 
 if ($ip -eq '::1') {
     $ip -eq '127.0.0.1'

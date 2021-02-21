@@ -22,15 +22,33 @@
             }
         </style>
         <style>
-            /* colors from logo: #a6d49c (light green), #005ca6 (dark blue), #007f60 (dark green - primary color on logo) */
-            /* primary is #a6d49c, triadic for vibrant accent are #d49ca7 and #9ca7d4 */
-            input[type=text], input[type=date] {
+            * {
+                -webkit-box-sizing: border-box;
+                -moz-box-sizing: border-box;
+                box-sizing: border-box;
+            }
+            table {
+                border-collapse: collapse;
+                font-family: "Calibri";
+            }
+            .preview {
+                border: 1px solid lightgray;
+            }
+            td {
+                padding: 0px;
+            }
+            textarea {
+                resize: none;
+                vertical-align: top !important;
+            }
+            input[type=text], input[type=date], textarea, select {
                 font-family: inherit;
                 font-size: inherit;
                 border: 1px solid #555;
                 border-radius: 0px;
                 margin: 0px;
-                padding: 0px;
+                width: 100%;
+                height: 100%;
             }
             input[readonly='readonly'], .readonly {
                 background-color: #d49ca7;
