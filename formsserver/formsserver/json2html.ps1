@@ -1,16 +1,14 @@
-<#
 param (
     [string] $jsonfile,
     [string] $htmlfile,
     [string] $ip,
     [string] $usr
 )
-#>
 
-$jsonfile = '\\file01\data\nmmc documents\Scripts\excelToJson\sample.json';
-$htmlfile = 'test.html';
-$ip = '10.1.2.63';
-$usr = 'swarner';
+#$jsonfile = '\\file01\data\nmmc documents\Scripts\excelToJson\sample.json';
+#$htmlfile = 'test.html';
+#$ip = '10.1.2.63';
+#$usr = 'swarner';
 
 [Reflection.Assembly]::LoadFile("C:\scripts\nodejs\formsserver\measurestring.dll");
 
@@ -41,7 +39,8 @@ foreach ($j in $jobj) {
 
             # table row 0 defines column widths
             for ($c=0; $c -lt $wArr.length; $c++) {
-                $table[0, ($c + 1)] = '<td width={0} style="text-align: center; background-color: #e5e4e2;">{1}</td>' -f ($wArr[$c] * $wunit), [char]($c + 65);
+                $label = $(Switch($c + 65) { {$_ -in 65..90 } { [char]($_); }  {$_ -in 91..117 } { 'A' + [char]($_ - 26); } default { $_; }});
+                $table[0, ($c + 1)] = '<td width={0} style="text-align: center; background-color: #e5e4e2;">{1}</td>' -f ($wArr[$c] * $wunit), $label;
             }
             # table column 0 defines row heights
             for ($r=0; $r -lt $hArr.length; $r++) {
@@ -52,19 +51,21 @@ foreach ($j in $jobj) {
 
             # table row 0 defines column widths
             for ($c=0; $c -lt $wArr.length; $c++) {
-                $table[0, ($c + 1)] = '<td width={0} style="text-align: center; background-color: #ffffff;"></td>' -f ($wArr[$c] * $wunit), [char]($c + 65);
+                $table[0, ($c + 1)] = '<td width={0} style="text-align: center; background-color: #ffffff;"></td>' -f ($wArr[$c] * $wunit);
             }
             # table column 0 defines row heights
             for ($r=0; $r -lt $hArr.length; $r++) {
-                $table[($r + 1), 0] = '<td height={0} style=" background-color: #ffffff;"></td>' -f $hArr[$r], ($r + 1);
+                $table[($r + 1), 0] = '<td height={0} style=" white-space: nowrap; background-color: #ffffff;"></td>' -f $hArr[$r];
             }
         }
     } else {
-        $sb.Clear();
+        $table[$j.row, $j.col] = [System.Text.StringBuilder]::new();
+
+        # $sb.Clear();
         if ($preview) {
-            buildString '<td class="preview" ';
+            $table[$j.row, $j.col].Append('<td class="preview" ');
         } else {
-            buildString '<td ';
+            $table[$j.row, $j.col].Append('<td ');
         }
         
         # add span
@@ -85,109 +86,124 @@ foreach ($j in $jobj) {
             } else {
                 $td_width = $wArr[$j.col];
             }
-            buildString ('colspan={0} rowspan={1} width={2} height={3} ' -f $j.colspan, $j.rowspan, $td_width, $td_height);
+            $table[$j.row, $j.col].Append(('colspan={0} rowspan={1} width={2} height={3} ' -f $j.colspan, $j.rowspan, $td_width, $td_height));
         } else {
-            buildString ('height={0} ' -f $hArr[$j.row]);
+            $table[$j.row, $j.col].Append(('height={0} ' -f $hArr[$j.row]));
         }
 
         # add cell styling
-        buildString 'style="';
+        $table[$j.row, $j.col].Append('style="');
 
-        if ($null -ne $j.fontName) { buildString (' font-family: {0};' -f $j.fontName); }
-        if ($null -ne $j.fontSize) { buildString (' font-size: {0}px;' -f $j.fontSize); }
-        if ($null -ne $j.fontBold) { buildString (' font-weight: bold;'); }
-        if ($null -ne $j.fontItalic) { buildString (' font-style: italic;'); }
-        if ($null -ne $j.fontColor) { buildString (' color: {0};' -f $j.fontColor); }
-        if ($null -ne $j.interiorColor) { buildString (' background-color: {0};' -f $j.interiorColor); }
+        if ($null -ne $j.fontName) { $table[$j.row, $j.col].Append(' font-family: {0};' -f $j.fontName); }
+        if ($null -ne $j.fontSize) { $table[$j.row, $j.col].Append(' font-size: {0}px;' -f $j.fontSize); }
+        if ($null -ne $j.fontBold) { $table[$j.row, $j.col].Append(' font-weight: bold;'); }
+        if ($null -ne $j.fontItalic) { $table[$j.row, $j.col].Append(' font-style: italic;'); }
+        if ($null -ne $j.fontColor) { $table[$j.row, $j.col].Append(' color: {0};' -f $j.fontColor); }
+        if ($null -ne $j.interiorColor) { $table[$j.row, $j.col].Append(' background-color: {0};' -f $j.interiorColor); }
 
         if ($null -ne $j.Halignment) {
             if ($null -ne $j.value) {
                 $h = @(Switch ($j.value.GetType().Name) { 'int32' {'right'} 'decimal' {'right'} 'string' {'left'} default {'left'} });
             }
-            buildString ('text-align: {0};' -f @(Switch ($j.Halignment) { '1' {$h} '-4108' {'center'} '-4131' {'left'} '-4152' {'right'} default {'left'} }));
+            $table[$j.row, $j.col].Append('text-align: {0};' -f @(Switch ($j.Halignment) { '1' {$h} '-4108' {'center'} '-4131' {'left'} '-4152' {'right'} default {'left'} }));
         }
-        if ($null -ne $j.Valignment) { buildString ('vertical-align: {0};' -f @(Switch ($j.Valignment) { '-4107' {'bottom'} '-4108' {'middle'} '-4160' {'text-top'} default {'middle'} })); }
+        if ($null -ne $j.Valignment) { $table[$j.row, $j.col].Append('vertical-align: {0};' -f @(Switch ($j.Valignment) { '-4107' {'bottom'} '-4108' {'middle'} '-4160' {'text-top'} default {'middle'} })); }
         if ($null -ne $j.borderTopLineStyle) {
-            buildString ('border-top-style: {0};' -f @(Switch ($j.borderTopLineStyle) { '1' {'solid'} '-4118' {'dotted'} '-4115' {'dashed'} default {'solid'} }));
-            buildString ('border-top-width: {0};' -f @(Switch ($j.borderTopWeight) { '1' {'1px'} '2' {'2px'} '-4138' {'3px'} '4' {'4px'} default {'1px'} }));
-            buildString ('border-top-color: {0};' -f $j.borderTopColor);
+            $table[$j.row, $j.col].Append('border-top-style: {0};' -f @(Switch ($j.borderTopLineStyle) { '1' {'solid'} '-4118' {'dotted'} '-4115' {'dashed'} default {'solid'} }));
+            $table[$j.row, $j.col].Append('border-top-width: {0};' -f @(Switch ($j.borderTopWeight) { '1' {'1px'} '2' {'2px'} '-4138' {'3px'} '4' {'4px'} default {'1px'} }));
+            $table[$j.row, $j.col].Append('border-top-color: {0};' -f $j.borderTopColor);
         }
         if ($null -ne $j.borderBottomLineStyle) {
-            buildString ('border-bottom-style: {0};' -f @(Switch ($j.borderBottomLineStyle) { '1' {'solid'} '-4118' {'dotted'} '-4115' {'dashed'} default {'solid'} }));
-            buildString ('border-bottom-width: {0};' -f @(Switch ($j.borderBottomWeight) { '1' {'1px'} '2' {'2px'} '-4138' {'3px'} '4' {'4px'} default {'1px'} }));
-            buildString ('border-bottom-color: {0};' -f $j.borderBottomColor);
+            $table[$j.row, $j.col].Append('border-bottom-style: {0};' -f @(Switch ($j.borderBottomLineStyle) { '1' {'solid'} '-4118' {'dotted'} '-4115' {'dashed'} default {'solid'} }));
+            $table[$j.row, $j.col].Append('border-bottom-width: {0};' -f @(Switch ($j.borderBottomWeight) { '1' {'1px'} '2' {'2px'} '-4138' {'3px'} '4' {'4px'} default {'1px'} }));
+            $table[$j.row, $j.col].Append('border-bottom-color: {0};' -f $j.borderBottomColor);
         }
         if ($null -ne $j.borderLeftLineStyle) {
-            buildString ('border-left-style: {0};' -f @(Switch ($j.borderLeftLineStyle) { '1' {'solid'} '-4118' {'dotted'} '-4115' {'dashed'} default {'solid'} }));
-            buildString ('border-left-width: {0};' -f @(Switch ($j.borderLeftWeight) { '1' {'1px'} '2' {'2px'} '-4138' {'3px'} '4' {'4px'} default {'1px'} }));
-            buildString ('border-left-color: {0};' -f $j.borderLeftColor);
+            $table[$j.row, $j.col].Append('border-left-style: {0};' -f @(Switch ($j.borderLeftLineStyle) { '1' {'solid'} '-4118' {'dotted'} '-4115' {'dashed'} default {'solid'} }));
+            $table[$j.row, $j.col].Append('border-left-width: {0};' -f @(Switch ($j.borderLeftWeight) { '1' {'1px'} '2' {'2px'} '-4138' {'3px'} '4' {'4px'} default {'1px'} }));
+            $table[$j.row, $j.col].Append('border-left-color: {0};' -f $j.borderLeftColor);
         }
         if ($null -ne $j.borderRightLineStyle) {
-            buildString ('border-right-style: {0};' -f @(Switch ($j.borderRightLineStyle) { '1' {'solid'} '-4118' {'dotted'} '-4115' {'dashed'} default {'solid'} }));
-            buildString ('border-right-width: {0};' -f @(Switch ($j.borderRightWeight) { '1' {'1px'} '2' {'2px'} '-4138' {'3px'} '4' {'4px'} default {'1px'} }));
-            buildString ('border-right-color: {0};' -f $j.borderRightColor);
+            $table[$j.row, $j.col].Append('border-right-style: {0};' -f @(Switch ($j.borderRightLineStyle) { '1' {'solid'} '-4118' {'dotted'} '-4115' {'dashed'} default {'solid'} }));
+            $table[$j.row, $j.col].Append('border-right-width: {0};' -f @(Switch ($j.borderRightWeight) { '1' {'1px'} '2' {'2px'} '-4138' {'3px'} '4' {'4px'} default {'1px'} }));
+            $table[$j.row, $j.col].Append('border-right-color: {0};' -f $j.borderRightColor);
         }
 
         # end cell styling
-        buildString '">';
+        $table[$j.row, $j.col].Append('">');
 
         # add content
         if ($null -ne $j.type) {
-            if ($j.type -eq 'date') { buildString ('<input id={0} name={0} type="{1}" placeholder="mm/dd/yyyy" style="background-color:inherit; ">' -f ($j.id, $j.type)); }
-            if ($j.type -eq 'text') { buildString ('<input id={0} name={0} type="{1}" size=5 style="background-color:inherit;">' -f ($j.id, $j.type)); }
-            if ($j.type -eq 'textarea') { buildString ('<textarea id={0} name={0} style="background-color:inherit;"></textarea>' -f ($j.id)); }
+            if ($j.type -eq 'date') { $table[$j.row, $j.col].Append('<input id={0} name={0} type="{1}" placeholder="mm/dd/yyyy" style="background-color:inherit; ">' -f ($j.id, $j.type)); }
+            if ($preview) {
+                if ($j.type -eq 'text') { $table[$j.row, $j.col].Append('<input id={0} name={0} type="search" placeholder="{2}" size=5 style="background-color:inherit;">' -f ($j.id, $j.type, $j.format)); }
+                if ($j.type -eq 'textarea') { $table[$j.row, $j.col].Append('<textarea id={0} name={0} placeholder="{1}" style="background-color:inherit;"></textarea>' -f ($j.id, $j.format)); }
+            } else {
+                if ($j.type -eq 'text') { $table[$j.row, $j.col].Append('<input id={0} name={0} type="{1}" size=5 style="background-color:inherit;">' -f ($j.id, $j.type)); }
+                if ($j.type -eq 'textarea') { $table[$j.row, $j.col].Append('<textarea id={0} name={0} style="background-color:inherit;"></textarea>' -f ($j.id)); }
+            }
         }
         if ($null -ne $j.formula) {
             if ($preview) {
-                buildString ('<input readonly id={0} name={0} placeholder={1} type=text style="font-family:inherit; background-color:inherit;" class="formula" formula=''{1}''>' -f ($j.id, $j.formula));
+                $table[$j.row, $j.col].Append('<input readonly id={0} name={0} placeholder={1} type=text style="font-family:inherit; background-color:inherit;" class="formula" formula=''{1}''>' -f ($j.id, $j.formula));
             } else {
-                buildString ('<input readonly id={0} name={0} type=text style="font-family:inherit; background-color:inherit;" class="formula" formula=''{1}''>' -f ($j.id, $j.formula));
+                $table[$j.row, $j.col].Append('<input readonly id={0} name={0} type=text style="font-family:inherit; background-color:inherit;" class="formula" formula=''{1}''>' -f ($j.id, $j.formula));
             }
         }
         if ($null -ne $j.validation) {
-            buildString ('<select id={0} name={0} style="font-family:inherit; background-color:inherit;">' -f $j.id, $j.fontName);
-            buildString "`n";
+            $table[$j.row, $j.col].Append('<select id={0} name={0} style="font-family:inherit; background-color:inherit;">' -f $j.id, $j.fontName);
+            $table[$j.row, $j.col].Append("`n");
             $j.validation.GetEnumerator() | ForEach-Object {
-                buildString ('<option value="{0}">{1}</option>' -f $_, $_);
-                buildString "`n";
+                $table[$j.row, $j.col].Append('<option value="{0}">{1}</option>' -f $_, $_);
+                $table[$j.row, $j.col].Append("`n");
             }
-            buildString '</select>';
-            buildString "`n";
+            $table[$j.row, $j.col].Append('</select>');
+            $table[$j.row, $j.col].Append("`n");
         }
 
         if ($null -ne $j.value) {
             if ($j.value.GetType().Name -eq 'int' -or $j.value.GetType().Name -eq 'decimal') {
                 Switch ($j.format) {
-                    'General' { buildString ('{0:g}' -f $j.value); }
-                    '0.00' { buildString ('{0:n}' -f $j.value); }
-                    '$#,##0.00_);[Red]($#,##0.00)' { buildString ('{0:c}' -f $j.value); }
-                    default  { buildString ('{0:g}' -f $j.value); }
+                    'General' { $table[$j.row, $j.col].Append('{0:g}' -f $j.value); }
+                    '0.00' { $table[$j.row, $j.col].Append('{0:n}' -f $j.value); }
+                    '$#,##0.00_);[Red]($#,##0.00)' { $table[$j.row, $j.col].Append('{0:c}' -f $j.value); }
+                    default  { $table[$j.row, $j.col].Append('{0:g}' -f $j.value); }
                 }
             } else {
-                buildString ('{0}' -f $j.value);
+                $table[$j.row, $j.col].Append('{0}' -f $j.value);
             }
         }
         # end cell
-        buildString '</td>';
-
-        # add to the array
-        $table[$j.row, $j.col] = $sb.ToString();
+        $table[$j.row, $j.col].Append('</td>');
     }
 }
 
+
 $sb.Clear();
-buildString '<table>';
+$table_width = 5; # size of column 0
+foreach ($w in $wArr) {
+    $table_width += $w;
+}
+buildString ('<table style="min-width:{0}px; max-width: 200%;">' -f ($wunit * $table_width)); # prevent table from resizing with browser
+if ($preview) {
+    buildString('<div class="watermark">Preview Mode</div>');
+}
 for ($r = 0; $r -lt $hArr.Length; $r++) {
     buildString '<tr>';
     for ($c = 0; $c -lt $wArr.Length; $c++) {
-        buildString($table[$r, $c]);
-        buildString "`n";
+        if ($null -ne $table[$r, $c]) {
+            if ($table[$r, $c].GetType().Name -eq 'StringBuilder') {
+                buildString($table[$r, $c].ToString());
+            } else {
+                buildString($table[$r, $c]);
+            }
+            buildString "`n";
+        }
     }
     buildString '</tr>';
     buildString "`n";
 }
 buildString '</table>';
-
 
 $html = $sb.ToString();
 Write-Host $html;
