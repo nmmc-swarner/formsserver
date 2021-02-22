@@ -32,6 +32,7 @@ const isLive = true; // note that this doesn't work on RDS
 //const { exception } = require('console');
 
 const jsondir = '\\\\file01\\data\\nmmc documents\\Scripts\\excelToJson\\';
+const xlsmfile = 'InstallForms.xlsm'
 
 function sendemail(mailoptions) {
     let transporter = nodemailer.createTransport({
@@ -139,7 +140,7 @@ http.createServer(function (req, res) {
 
             var bdict = qs.parse(body);
             var from = unescape(bdict['popFrom']);
-            var to = unescape(bdict['popTo']);
+            var to = unescape(bdict['popTo']) || '';
             var bcc = unescape(bdict['popCc']);
             var subject = unescape(bdict['popSubject']).replace('+', ' ');
             var message = unescape(bdict['popMessage']).replace('+', ' ').replace('\n', '<br>');
@@ -176,6 +177,16 @@ http.createServer(function (req, res) {
         });
     }
     if (req.method === 'GET') {
+        if (action == 'install') {
+            var xlsm = fs.createReadStream(xlsmfile);
+
+            res.statusCode = 200;
+            res.setHeader('Content-Type', 'application/vnd.ms-excel');
+            res.setHeader('Content-Disposition', `inline; filename="${xlsmfile}"`);
+            res.setHeader('Content-Transfer-Encoding', 'binary');
+            res.setHeader('Accept-Ranges', 'bytes');
+            xlsm.pipe(res);
+        }
         if (action === null) {
             fs.readFile('./menu.html', null, (err, html) => {
                 if (err) throw err;
@@ -183,7 +194,9 @@ http.createServer(function (req, res) {
                 var fnames = fs.readdirSync(jsondir);
                 var options = '';
                 for (var f of fnames) {
-                    options += `<option value="${f}">${f}</option>`;
+                    if (path.extname(f) == '.json') {
+                        options += `<option value="${f}">${f}</option>`;
+                    }
                 }
                 hstr = hstr.replace('<select name="menu" id="menu">', `<select name="menu" id="menu">${options}`);
                 var re = new RegExp('src="(.*\.png)"\/>');
